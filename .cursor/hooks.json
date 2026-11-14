@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "command": "python3 .cursor/hooks/prompt_log.py" }
+    ],
+    "beforeSubmitPrompt": [
+      { "command": "python3 .cursor/hooks/prompt_log.py" }
+    ],
+    "postToolUse": [
+      { "command": "python3 .cursor/hooks/prompt_log.py" }
+    ],
+    "postToolUseFailure": [
+      { "command": "python3 .cursor/hooks/prompt_log.py" }
+    ],
+    "afterAgentResponse": [
+      { "command": "python3 .cursor/hooks/prompt_log.py" }
+    ],
+    "afterFileEdit": [
+      { "command": "python3 .cursor/hooks/prompt_log.py" }
+    ]
+  }
+}
