@@ -1415,3 +1415,204 @@ AI response summary:
 Smoke: `GET http://localhost:3000/health`
 ```
 
+## Session 6
+Timestamp: 2026-11-15T22:59:44+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Before making any changes, read and follow the instructions in:
+.cursor/skills/frontend-react/SKILL.md
+
+Now let's work on the frontend.
+
+I want a simple and clean interface where users can:
+
+- Search for a company using its ticker.
+- See basic company information.
+- Browse the company's filings.
+- Filter filings by form type.
+- Filter filings by date range.
+- Move between pages.
+- Open the original SEC document.
+
+Please use the existing React and TypeScript setup.
+
+The frontend should get its data from our NestJS backend. It should not communicate directly with SEC EDGAR.
+
+Please keep the components organised and reusable where it makes sense.
+
+Make sure loading, empty and error states are handled properly.
+
+Don't add features that are not required for the assignment.
+
+Follow ## Feature-based structure in .cursor/skills/frontend-react/SKILL.md
+```
+AI response summary:
+
+````
+I'm in **Ask mode**, so I can't edit files yet. Here is the implementation plan aligned with `.cursor/skills/frontend-react/SKILL.md` and your Nest API. Switch to **Agent mode** (or Plan mode first) when you want this built.
+
+## Constraints from the skill
+
+- Call Nest only — never SEC from the browser  
+- Feature-based folders (`companies`, `filings`, small `shared`)  
+- No router unless needed (one page is enough)  
+- No Redux / React Query unless justified — local state + `fetch`  
+- Loading / empty / error handled explicitly  
+- Assignment scope only  
+
+## Proposed structure
+
+```text
+frontend/src/
+  app/
+    App.tsx
+  features/
+    companies/
+      components/CompanySearch.tsx
+      components/CompanyDetails.tsx
+      hooks/useCompanySearch.ts
+      services/companiesApi.ts
+      types/company.ts
+    filings/
+      components/FilingsFilters.tsx
+      components/FilingsTable.tsx
+      components/FilingsPagination.tsx
+      hooks/useCompanyFilings.ts
+      services/filingsApi.ts
+      types/filing.ts
+  shared/
+    components/StatusMessage.tsx   # loading / empty / error
+    services/apiClient.ts          # base URL + error parsing
+    types/apiError.ts
+  main.tsx
+  index.css
+```
+
+No empty folders. No Context unless something truly cross-cutting appears.
+
+## Data flow
+
+1. User enters/selects ticker (AAPL, META, GOOGL, AMZN, NFLX, GS)  
+2. `GET /api/companies/:ticker` → company card  
+3. `GET /api/companies/:ticker/filings?formType&startDate&endDate&page&limit` → table  
+4. Filters change → reset `page` to 1 → refetch  
+5. Document column → `<a href={primaryDocumentUrl} target="_blank" rel="noreferrer">`  
+
+Base URL via `VITE_API_BASE_URL` (default `http://localhost:3000`). CORS already allows Vite on `5173`.
+
+## UX (one page)
+
+- Search/select ticker + Search  
+- Company: name, ticker, CIK  
+- Filters: form type, start/end date  
+- Table: form, filing date, report date, accession, Open document  
+- Pagination: prev/next + page info from `{ page, limit, total, totalPages }`  
+- States: loading, empty (“No filings”), API error message  
+
+## Config / cleanup
+
+- Add `frontend/.env.example` with `VITE_API_BASE_URL`  
+- Replace Vite starter `App.tsx` / CSS with the filings UI  
+- Update `App.test.tsx` for the new heading/flow; mock API in tests  
+
+## Out of scope
+
+Auth, charts, Redux, React Router (unless you later want shareable URLs), direct SEC calls.
+
+Switch to **Agent mode** and say “implement the frontend” when you want this applied.
+````
+
+## Session 6
+Timestamp: 2026-11-15T23:19:46+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Please consider this as new skill:
+
+Use the rfrontend-react skill as the mandatory
+frontend development standard for this entire project.
+
+Read the complete skill file:
+
+.cursor/skills/frontend-react/SKILL.md
+
+Apply these standards to all future frontend tasks,
+including new features, modifications, bug fixes and refactoring.
+
+Before implementing anything:
+1. Inspect the existing project.
+2. Understand the current architecture.
+3. Follow the defined folder structure.
+4. Reuse existing components and utilities.
+5. Follow the mandatory implementation checklist.
+
+Do not overengineer the application.
+Prioritize clean code, maintainability, simplicity and
+professional UI quality.
+```
+AI response summary:
+
+```
+Understood. For all frontend work in this project I’ll treat [`.cursor/skills/frontend-react/SKILL.md`](.cursor/skills/frontend-react/SKILL.md) as the mandatory standard—new features, fixes, and refactors.
+
+Before any frontend change I’ll:
+
+1. Inspect the existing React/Vite setup and conventions  
+2. Match the current architecture  
+3. Use the feature-based layout (`features/companies`, `features/filings`, small `shared/`)  
+4. Reuse existing pieces instead of inventing parallels  
+5. Follow the skill’s implementation checklist (Nest-only API, loading/empty/error, accessible UI, tests, no overengineering)
+
+I’ll keep the UI simple, maintainable, and within assignment scope—no SEC calls from the browser, no unnecessary libraries or global state.
+
+I’m still in **Ask mode**, so I can’t edit files or lock this into `.cursor/rules` yet. Switch to **Agent mode** if you want that written as a persistent project rule, or to start implementing the frontend under this skill.
+```
+
+## Session 6
+Timestamp: 2026-11-15T23:21:18+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan change in solid and dry principle
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T23:25:36+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+Frontend SEC filings UI is in place under the skill layout with SOLID/DRY boundaries.
+
+**What you get**
+- Feature modules: `companies` + `filings` (types → services → hooks → components)
+- Shared `lib/axios` (`ApiError` from Nest `{ statusCode, code, message }`) and `StatusMessage`
+- One page: ticker select, company header, RHF+Zod filters, table, pagination
+- Stack: Tailwind, shadcn, Router, TanStack Query, Axios, Zod/RHF, Lucide
+- `VITE_API_BASE_URL` via `.env` / `.env.example`
+
+**Verify**
+- `npm run build`, `lint`, and `test` all pass in `frontend/`
+
+Run Nest on `:3000`, then `npm run dev` in `frontend/`.
+```
+

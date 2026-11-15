@@ -43,5 +43,10 @@ Decision: Replace Hello World with `GET /health` (version from package.json + IS
 Rejected: Leaving health under `/api/health`, and inventing a real SEC contact email.
 Why: Load balancers expect `/health`. CORS unblocks the upcoming frontend. Small filter/date fixes close review gaps without redesign.
 
+## 2026-11-15T23:31+01:00
+Decision: Build the Vite React filings UI with feature folders (`companies`, `filings`), shared `lib/axios` + `StatusMessage`, TanStack Query hooks, RHF+Zod filters, and Nest-only `/api` calls under SOLID/DRY layering.
+Rejected: Calling SEC from the browser, a generic CRUD/service base, inventing a companies-list API, and parking skill deps in a root `package.json`.
+Why: Matches the frontend-react skill and Nest contracts. One Axios client and shared status UI avoid duplication without extra abstraction.
+
 
 
