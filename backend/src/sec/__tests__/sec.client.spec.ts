@@ -1,4 +1,5 @@
 import { AxiosInstance } from 'axios';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { AppError } from '../../common/errors/app.error';
 import { SecConfig } from '../sec.config';
 import { SecClient } from '../sec.client';
@@ -13,7 +14,7 @@ const testSecConfig: SecConfig = {
 
 describe('SecClient', () => {
   let http: {
-    get: jest.Mock;
+    get: jest.MockedFunction<(...args: any[]) => Promise<{ data: any }>>;
   };
   let client: SecClient;
 

@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { ConfigService } from '@nestjs/config';
 import { loadSecConfig } from '../sec.config';
 

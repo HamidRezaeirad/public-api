@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import type { SecFilingRecord } from '../../sec/dtos/sec-filing.interface';
 import {
   filterFilings,

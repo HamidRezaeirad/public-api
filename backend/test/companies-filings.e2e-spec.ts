@@ -1,3 +1,11 @@
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
@@ -10,35 +18,55 @@ describe('Companies and filings (e2e)', () => {
   let app: INestApplication<App>;
 
   const secClient = {
-    getCompanySubmissions: jest.fn().mockResolvedValue({
-      company: {
-        cik: '0000320193',
-        name: 'Apple Inc.',
-        tickers: ['AAPL'],
-        exchanges: ['Nasdaq'],
-      },
-      recentFilings: [
-        {
-          formType: '10-K',
-          filingDate: '2024-11-01',
-          reportDate: '2024-09-28',
-          accessionNumber: '0000320193-24-000123',
-          primaryDocument: 'aapl-20240928.htm',
-          primaryDocumentUrl:
-            'https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/aapl-20240928.htm',
+    getCompanySubmissions: jest
+      .fn<
+        () => Promise<{
+          company: {
+            cik: string;
+            name: string;
+            tickers: string[];
+            exchanges: string[];
+          };
+          recentFilings: {
+            formType: string;
+            filingDate: string;
+            reportDate: string;
+            accessionNumber: string;
+            primaryDocument: string;
+            primaryDocumentUrl: string;
+          }[];
+          historicalFiles: unknown[];
+        }>
+      >()
+      .mockResolvedValue({
+        company: {
+          cik: '0000320193',
+          name: 'Apple Inc.',
+          tickers: ['AAPL'],
+          exchanges: ['Nasdaq'],
         },
-        {
-          formType: '8-K',
-          filingDate: '2024-10-01',
-          reportDate: '2024-10-01',
-          accessionNumber: '0000320193-24-000050',
-          primaryDocument: 'd8k.htm',
-          primaryDocumentUrl:
-            'https://www.sec.gov/Archives/edgar/data/320193/000032019324000050/d8k.htm',
-        },
-      ],
-      historicalFiles: [],
-    }),
+        recentFilings: [
+          {
+            formType: '10-K',
+            filingDate: '2024-11-01',
+            reportDate: '2024-09-28',
+            accessionNumber: '0000320193-24-000123',
+            primaryDocument: 'aapl-20240928.htm',
+            primaryDocumentUrl:
+              'https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/aapl-20240928.htm',
+          },
+          {
+            formType: '8-K',
+            filingDate: '2024-10-01',
+            reportDate: '2024-10-01',
+            accessionNumber: '0000320193-24-000050',
+            primaryDocument: 'd8k.htm',
+            primaryDocumentUrl:
+              'https://www.sec.gov/Archives/edgar/data/320193/000032019324000050/d8k.htm',
+          },
+        ],
+        historicalFiles: [],
+      }),
     getSubmissionsFile: jest.fn().mockResolvedValue([]),
   };
 
