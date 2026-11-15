@@ -26,6 +26,23 @@ Build and maintain the SEC EDGAR filings backend in the existing NestJS project.
 - Keep SEC transport and response-shape handling behind an integration boundary. Do not leak raw SEC response objects into controllers or public API responses.
 - Define explicit public response contracts. Do not return arbitrary upstream payloads.
 
+## Module folder layout
+Apply this layout to every backend feature module.
+
+- Keep `<module>.module.ts`, `<module>.controller.ts`, and `<module>.service.ts` at the module root when the module has one of each. A module with no HTTP routes, such as `sec`, has no controller.
+- Put DTOs and public interfaces in `dtos/`. Name DTO files `<name>.dto.ts`, for example `company.dto.ts`. Name interface files `<name>.interface.ts`.
+- Put unit tests in `__tests__/` and name them `<subject>.spec.ts`.
+- Put pipes in `pipes/` when a module has them. Use the same folder grouping for other repeated file kinds, such as `filters/` or `types/`.
+- Create a folder when that kind of file exists. Do not add empty folders. Leave a single file of its kind at the module root.
+- Keep SEC upstream payload types in `sec/types/`. Keep public API contracts in `dtos/`.
+- Keep end-to-end tests in `backend/test/` as `*.e2e-spec.ts`.
+
+## Central error handling
+- Keep shared errors and the HTTP exception filter under `common/` (`common/errors/`, `common/filters/`).
+- Do not add `*.errors.ts` inside feature modules (`companies`, `filings`, `sec`).
+- Feature code throws shared `AppError` (or Nest `HttpException` where it is already the right public response).
+- The global filter owns the JSON error body and status mapping. Register it in `configureApp` so bootstrap and e2e share it.
+
 ## SOLID and DRY
 - Single Responsibility: each class/module has a cohesive purpose.
 - Open/Closed: extend behavior through clear interfaces or composition when needed; avoid premature plugin architectures.
@@ -57,6 +74,8 @@ Build and maintain the SEC EDGAR filings backend in the existing NestJS project.
 - Sort newest first using filing date, with a deterministic tie-breaker if dates match.
 - Return only the required filing fields: form type, filing date, report date, accession number, and primary document URL, plus documented pagination metadata.
 - Keep upstream URLs and response quirks inside the SEC integration layer.
+- Use one shared axios instance in the `sec` module for every outbound SEC request. Set the base URL, `User-Agent`, and timeout on that instance.
+- Do not call axios from controllers or from the `companies` or `filings` modules. Tests replace `SecClient` with a double.
 
 ## API design
 - Use resource-oriented REST routes and consistent naming.

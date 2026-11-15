@@ -405,3 +405,661 @@ Checks from `backend/`:
 A local smoke test on port 3001 returned `Hello World!` from `GET /api`, HTML 200 from `/docs`, and an OpenAPI document titled “SEC EDGAR filings” 1.0 whose only path is `/api`. Port 3000 was already in use, so that process was left alone.
 ```
 
+## Session 6
+Timestamp: 2026-11-15T20:12:54+01:00
+Tool: Cursor
+Model: grok-4.7
+Prompt:
+
+```
+Here are the requirements for the assignment.
+
+I need to build a read-only API for SEC company filings.
+
+The API should support these companies:
+- Apple (AAPL)
+- Meta (META)
+- Alphabet (GOOGL)
+- Amazon (AMZN)
+- Netflix (NFLX)
+- Goldman Sachs (GS)
+
+Users should be able to:
+- Search for a company using its ticker.
+- View the company's filings, with the newest ones first.
+- Filter filings by form type, such as 10-K and 8-K.
+- Filter filings by date range.
+- Move between pages of results.
+- Open a specific filing using its accession number.
+
+Each filing should include:
+- Form type
+- Filing date
+- Report date
+- Accession number
+- Link to the original document on SEC.gov
+
+I also need a simple frontend where users can search for companies and browse their filings.
+
+The project and prompt logging are already set up.
+
+First, please look through the existing project and understand how it is structured. Don't change any files yet.
+
+Use this prompt as understand the project and requirement I will add more prompt to build the project step by step.
+```
+AI response summary:
+
+````
+The repository is a two-app scaffold. The SEC filings behavior is not built yet. What is already in place is the NestJS API shell, the React starter, Swagger, and the assignment logging.
+
+## Layout
+
+```text
+public-api/
+  NOTES.md, PROMPT_LOG.md, TOOL_CALL_LOG.md
+  .cursor/skills/          assignment, Nest, React, and notes rules
+  .cursor/hooks.json       writes the prompt and tool logs
+  backend/                 NestJS 11 API
+  frontend/                Vite + React 19 UI
+```
+
+There is no root `package.json`. Each app installs and runs on its own. `package-lock.json` at the repo root is empty.
+
+## Backend
+
+NestJS 11.2.10 on port `3000` (`PORT` overrides that). The only route is the starter hello endpoint.
+
+| Path | What it does |
+|---|---|
+| `GET /api` | Returns `Hello World!` |
+| `GET /docs` | Swagger UI, titled "SEC EDGAR filings" |
+| `GET /docs-json` | OpenAPI JSON |
+
+`configureApp` in `backend/src/configure-app.ts` sets the `/api` prefix and Swagger. `main.ts` and the e2e test both call it, so those paths stay the same in tests. `AppModule` only registers `AppController` and `AppService`.
+
+Installed runtime packages are `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`, `@nestjs/swagger`, `reflect-metadata`, and `rxjs`. There is no database client, no HTTP client library, and no `class-validator` / `class-transformer`, even though the Swagger compiler plugin is set up for `*.dto.ts` files and a class-validator shim.
+
+`backend/.env` is gitignored and currently contains one variable, `SEC_USER_AGENT=https://data.sec.gov`. SEC fair-access rules expect a descriptive application name plus a real contact in that header. That value will need to be replaced with a real contact before live SEC calls.
+
+Checks already wired in `backend/package.json`: `npm test`, `npm run test:e2e`, `npm run lint`, `npm run build`, `npm run start:dev`. TypeScript has `strictNullChecks` on. `noImplicitAny` is off.
+
+## Frontend
+
+Vite 8, React 19, TypeScript 6, Vitest, and Testing Library. `src/App.tsx` is still the Vite starter: logos, a counter, and docs links. One test checks that the "Get started" heading renders.
+
+There is no router, no data-fetching library, and no API client. The browser is meant to call this Nest API only, never SEC directly. Scripts: `npm run dev`, `npm test`, `npm run lint`, `npm run build`.
+
+## Assignment, mapped to the current code
+
+The API is read-only, with no database. Supported tickers are AAPL, META, GOOGL, AMZN, NFLX, and GS.
+
+| Requirement | Current state |
+|---|---|
+| Look up a company by ticker | Not implemented |
+| List filings, newest first | Not implemented |
+| Filter by form type (10-K, 8-K, and others) | Not implemented |
+| Filter by date range | Not implemented |
+| Paginate | Not implemented |
+| Open one filing by accession number | Not implemented |
+| Each filing: form type, filing date, report date, accession number, SEC.gov document link | Not implemented |
+| Simple UI to search a company and browse filings | Starter page only |
+
+The quality rules already settle a few implementation constraints for later steps: filter on filing date with inclusive boundaries, sort newest first with a stable tie-break, validate page and limit with a default and a maximum, return an empty list when a valid filter matches nothing, and use 400, 404, and 502/503/504 for invalid input, a missing company or filing, and SEC failures. SEC transport stays behind an integration boundary. Public JSON stays independent of the raw SEC payload. The primary document filename comes from filing metadata. The archive path drops dashes from the accession number. CIKs stay 10-digit and zero-padded except in the Archives URL, which strips leading zeros.
+
+Logging is already set up. Hooks append prompts and tool calls. Design choices go in `NOTES.md`. Earlier notes cover dependency pins and the Swagger `/docs` setup. I did not change any files.
+````
+
+## Session 6
+Timestamp: 2026-11-15T20:21:31+01:00
+Tool: Cursor
+Model: grok-4.7
+Prompt:
+
+```
+Let's start with the backend.
+
+Please look at the current NestJS project and suggest how we should organise the code for this assignment.
+
+I want the code to be easy to understand and maintain. Please avoid making it more complicated than necessary.
+
+For example modular code like :
+companies
+filings
+sec
+
+In each module I need to group files in folders like 
+__tests__ folder for unit test
+dtos for dtos and interfaces naming should follow for example company.dto.ts.
+Put multiple simmiler files in one folder doe example test files or pip files
+
+add above instraction the skill file to fillow for all mdules in backend
+
+Don't start coding yet. I want to review the plan first.
+```
+AI response summary:
+
+````
+The backend should stay three feature modules under `backend/src`, with the same folder rules in each one. Nothing is written yet: this is the layout to review, including the section I would add to `.cursor/skills/backend-nestjs/SKILL.md`.
+
+## What each module owns
+
+`AppModule` only imports the feature modules. `main.ts` and `configure-app.ts` stay at `src/` for bootstrap, the `/api` prefix, and Swagger.
+
+| Module | Responsibility |
+|---|---|
+| `companies` | The six supported tickers, company lookup, ticker to 10-digit CIK. No SEC calls. |
+| `filings` | List filings newest first, form-type and date filters, pagination, and lookup by accession number. |
+| `sec` | HTTP to SEC, `User-Agent`, timeouts, archive URLs, and raw SEC JSON. No controller. |
+
+`FilingsModule` imports `CompaniesModule` and `SecModule`. `CompaniesModule` does not import `SecModule`. The supported companies are a static list in the companies module, because the assignment fixes those six tickers.
+
+## Folder layout
+
+Jest already picks up any `*.spec.ts` under `src`. End-to-end tests stay in `backend/test/` as `*.e2e-spec.ts`. The existing hello-world files stay where they are until a real route replaces them.
+
+```text
+backend/src/
+  main.ts
+  configure-app.ts
+  app.module.ts
+  companies/
+    companies.module.ts
+    companies.controller.ts
+    companies.service.ts
+    supported-companies.ts
+    dtos/
+      company.dto.ts
+    __tests__/
+      companies.service.spec.ts
+  filings/
+    filings.module.ts
+    filings.controller.ts
+    filings.service.ts
+    dtos/
+      filing.dto.ts
+      list-filings-query.dto.ts
+    __tests__/
+      filings.service.spec.ts
+  sec/
+    sec.module.ts
+    sec.client.ts
+    dtos/
+      sec-filing.interface.ts
+    types/
+      sec-submissions.type.ts
+    __tests__/
+      sec.client.spec.ts
+```
+
+One controller and one service stay at the module root. Similar files share a folder:
+
+- `dtos/` holds public request and response DTOs, plus interfaces that belong to that contract. DTO files are named `<name>.dto.ts`, for example `company.dto.ts`. Interface files are named `<name>.interface.ts`.
+- `__tests__/` holds that module’s unit tests, named `<subject>.spec.ts`.
+- `pipes/` is added only when that module has pipe files, using the same grouping for other repeated kinds such as `filters/` or `types/`.
+- A folder is created when those files exist. Empty folders are not added.
+- SEC upstream payload shapes go in `sec/types/`. Public response types stay in `dtos/`, so raw SEC JSON does not become the API contract.
+
+`sec` has an interface in `dtos/` for the filing shape it hands to `filings`. The raw submissions JSON stays in `types/`.
+
+## Skill text to add
+
+I would insert this after **Architecture and module boundaries** in `.cursor/skills/backend-nestjs/SKILL.md`, so every later backend module follows it:
+
+```markdown
+## Module folder layout
+Apply this layout to every backend feature module.
+
+- Keep `<module>.module.ts`, `<module>.controller.ts`, and `<module>.service.ts` at the module root when the module has one of each. A module with no HTTP routes, such as `sec`, has no controller.
+- Put DTOs and public interfaces in `dtos/`. Name DTO files `<name>.dto.ts`, for example `company.dto.ts`. Name interface files `<name>.interface.ts`.
+- Put unit tests in `__tests__/` and name them `<subject>.spec.ts`.
+- Put pipes in `pipes/` when a module has them. Use the same folder grouping for other repeated file kinds, such as `filters/` or `types/`.
+- Create a folder when that kind of file exists. Do not add empty folders. Leave a single file of its kind at the module root.
+- Keep SEC upstream payload types in `sec/types/`. Keep public API contracts in `dtos/`.
+- Keep end-to-end tests in `backend/test/` as `*.e2e-spec.ts`.
+```
+
+The skill file is unchanged. After you approve this plan, switch to Agent mode and I will add that section.
+````
+
+## Session 6
+Timestamp: 2026-11-15T20:25:57+01:00
+Tool: Cursor
+Model: grok-4.7
+Prompt:
+
+```
+I want to use axios for calling rest api as well. add this to skill later as well.
+```
+AI response summary:
+
+```
+SEC calls will go through one axios client in the `sec` module. The skill file stays unchanged until you approve the layout and we apply it together.
+
+`axios` is not installed. The companies and filings modules will not call HTTP. `SecClient` in `sec/sec.client.ts` will own a single axios instance, created in `SecModule` and injected into the client. That instance carries the SEC base URL, the `User-Agent` from `SEC_USER_AGENT`, and a timeout. Controllers keep using Nest as they do now.
+
+Unit tests mock `SecClient`. They do not call SEC.
+
+When the skill update is applied, these two bullets go into **SEC EDGAR integration** in `.cursor/skills/backend-nestjs/SKILL.md`:
+
+- Use one shared axios instance in the `sec` module for every outbound SEC request. Set the base URL, `User-Agent`, and timeout on that instance.
+- Do not call axios from controllers or from the `companies` or `filings` modules. Tests replace `SecClient` with a double.
+
+The `axios` package is added at implementation time, then checked with `npm audit` before it is treated as safe to keep.
+```
+
+## Session 6
+Timestamp: 2026-11-15T20:28:38+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Now let's work on getting company and filing information from SEC EDGAR.
+
+Please create the service that communicates with the SEC API.
+
+I want all SEC requests to go through the backend, not directly from the frontend.
+
+Please make sure we handle the SEC requirements properly, including the User-Agent, request limits and errors.
+
+Keep the implementation simple and explain how the company information and filing data are retrieved.
+
+Before finishing, tell me what you implemented and how I can test it.
+```
+AI response summary:
+
+<!-- pending:9bde48ba-57c7-47eb-9261-d8556f249036 2026-11-15T20:28:38+01:00 -->
+
+## Session 6
+Timestamp: 2026-11-15T20:29:01+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan changes
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T20:37:48+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+I want to have a central error handeling not keep the *.errors.ts in each module. Plan for this changes.
+```
+AI response summary:
+
+```
+The plan now uses one shared error path instead of per-module `*.errors.ts` files.
+
+**Central layout**
+- `backend/src/common/errors/app.error.ts` — shared `AppError` with stable codes
+- `backend/src/common/filters/app-exception.filter.ts` — global filter → consistent JSON `{ statusCode, code, message }`
+- Registered in `configure-app.ts` so bootstrap and e2e share it
+
+**`sec` module**
+- No `sec.errors.ts`
+- `SecClient` throws `AppError`; the filter maps codes to 400/403/404/429/502/504
+
+The skill update will also say: keep errors/filters in `common/`, not inside `companies`, `filings`, or `sec`.
+
+Say when you want this plan executed.
+```
+
+## Session 6
+Timestamp: 2026-11-15T20:39:55+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Is SecClient.ts a controller? why it name has Clinet inside?
+```
+AI response summary:
+
+```
+No. `SecClient` is not a controller.
+
+In NestJS:
+
+| Role | Typical name | What it does |
+|---|---|---|
+| Controller | `CompaniesController` | HTTP routes (`@Get`, `@Query`, …) for your API |
+| Service | `FilingsService` | App logic for that feature |
+| Client | `SecClient` | Talks to an **external** system (here, SEC EDGAR over HTTP) |
+
+`Client` means “client of the SEC API,” the same idea as an HTTP client or SDK wrapper. Your backend calls SEC; `SecClient` owns that axios traffic, User-Agent, rate spacing, and mapping of SEC JSON.
+
+`sec` has no controller in the plan because it is not a public API surface. Later, `CompaniesController` / `FilingsController` call services, and those services call `SecClient`.
+
+So the name is intentional: integration boundary, not a Nest route handler. If you prefer Nest-style naming, `SecService` is fine too; `SecClient` just makes the “outbound provider” role clearer.
+```
+
+## Session 6
+Timestamp: 2026-11-15T20:40:31+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+````
+## What changed
+
+1. **Skill** — module folder layout, axios-only-in-`sec`, and central error handling in `.cursor/skills/backend-nestjs/SKILL.md`
+2. **Deps** — `axios`, `@nestjs/config@4`; `ConfigModule` + `SecModule` in `AppModule`; `.env.example` + placeholder `.env`
+3. **Common errors** — `AppError` + global `AppExceptionFilter` registered in `configureApp`
+4. **`SecClient`** — submissions + historical file fetch, document URL builder, 100ms spacing, User-Agent/timeout, maps failures to `AppError`
+
+## How data is retrieved
+
+- **Company:** `GET https://data.sec.gov/submissions/CIK##########.json` → name, CIK, tickers, exchanges  
+- **Recent filings:** `filings.recent` parallel arrays → `SecFilingRecord[]` with Archives document URLs  
+- **History:** `filings.files` names → `getSubmissionsFile(name)`  
+- **Document URL:** `https://www.sec.gov/Archives/edgar/data/{cikNoZeros}/{accessionNoDashes}/{primaryDocument}`
+
+## How to test
+
+```bash
+cd backend
+npm test          # 15 unit tests (mocked axios)
+npm run lint
+npm run build
+npm run test:e2e  # GET /api still works
+```
+
+For live SEC later: set a real `SEC_USER_AGENT` like `SEC Filings API you@email.com` in `backend/.env` (current value is a placeholder). There is no public SEC route yet; next step is `companies` / `filings`.
+
+## Checks run
+
+| Check | Result |
+|---|---|
+| `npm test` | 15 passed |
+| `npm run lint` | 0 errors (existing `main.ts` floating-promise warning) |
+| `npm run build` | passed |
+| `npm run test:e2e` | 1 passed |
+| `npm audit` | 6 low (deepmerge via Jest); no force fix |
+
+## Gap
+
+No company/filings HTTP API yet — `SecClient` is wired for the next modules to use.
+````
+
+## Session 6
+Timestamp: 2026-11-15T21:12:18+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+I want to read all const in sec.constants.ts from .env
+```
+AI response summary:
+
+````
+`SEC_AXIOS` should stay a code Symbol for DI. Only the config values belong in `.env`.
+
+Right now:
+
+| In code | Source today |
+|---|---|
+| `SEC_AXIOS` | Injection token — keep in `sec.constants.ts` |
+| `SEC_DATA_BASE_URL` | Hardcoded in `sec.constants.ts` |
+| `DEFAULT_SEC_TIMEOUT_MS` | Hardcoded default; already overridable via `SEC_TIMEOUT_MS` |
+| `ARCHIVES_BASE_URL` / `MIN_REQUEST_INTERVAL_MS` | Hardcoded in `sec.client.ts`, not in constants |
+
+Also already from env: `SEC_USER_AGENT`.
+
+### Suggested `.env` / `.env.example`
+
+```bash
+SEC_USER_AGENT=SEC Filings API your-email@example.com
+SEC_DATA_BASE_URL=https://data.sec.gov
+SEC_ARCHIVES_BASE_URL=https://www.sec.gov/Archives/edgar/data
+SEC_TIMEOUT_MS=10000
+SEC_MIN_REQUEST_INTERVAL_MS=100
+```
+
+### How to wire it
+
+1. Keep only `SEC_AXIOS` in `sec.constants.ts`.
+2. In `sec.module.ts`, read URLs/timeout from `ConfigService` when creating axios.
+3. Inject those same values into `SecClient` (config object or individual tokens) so Archives URL and interval are not hardcoded.
+4. Validate required strings at startup; use numeric defaults only if you still want optional keys.
+5. Prefer trusted SEC hosts only — do not allow arbitrary user-controlled hosts in production without validation.
+
+I'm in Ask mode, so I can't edit the files. Switch to Agent mode if you want this applied.
+````
+
+## Session 6
+Timestamp: 2026-11-15T21:22:19+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Why create an Axios instance in sec.module.ts? Wouldn't it be better to create a single-responsibility file, for example axios.instance.ts and create an Axios instance in it, put it in the common folder, and reuse it throughout the whole backend project?
+```
+AI response summary:
+
+```
+Putting axios in `sec.module.ts` is intentional for this project. A shared `common/axios.instance.ts` for the whole backend is usually the worse fit here.
+
+### Why it lives in `SecModule`
+
+1. **SEC-specific config** — That instance is not a generic HTTP client. It is locked to `data.sec.gov`, the SEC `User-Agent`, timeout, and (via `SecClient`) request spacing. Those rules must not silently apply to every future outbound call.
+2. **Single responsibility already exists** — Nest’s module boundary *is* the SRP unit. `SecModule` owns “talk to SEC.” `SecClient` owns mapping and rate spacing. A bare `axios.instance.ts` only moves construction; it does not improve the design unless many modules share the *same* upstream.
+3. **Assignment skill** — Outbound SEC traffic stays in `sec`. `companies` / `filings` call `SecClient`, not axios. A global client invites the opposite: features importing `common/axios` and talking to SEC (or other hosts) directly.
+4. **Nothing else needs it yet** — The backend has one external API. Sharing “for the whole project” is premature.
+
+### When a shared factory *would* make sense
+
+If you later call several unrelated APIs, prefer something like:
+
+- `common/http/create-axios-client.ts` — a small factory that takes `baseURL`, headers, timeout
+- Each integration module (`sec`, `payments`, …) creates **its own** instance with its own config
+
+That reuses construction logic without one global client carrying SEC headers everywhere.
+
+### What not to do
+
+| Approach | Problem |
+|---|---|
+| One `common` axios used everywhere | SEC User-Agent / base URL leak into unrelated calls |
+| Export a singleton from `axios.instance.ts` | Harder to test/replace than Nest DI (`SEC_AXIOS` token) |
+| Let every module import axios directly | Breaks the integration boundary |
+
+**Recommendation:** keep the SEC axios provider in `SecModule`. If you want a cleaner file split inside `sec/`, a local `sec-axios.provider.ts` is fine. Do not promote it to a project-wide client unless a second upstream with the same needs appears.
+```
+
+## Session 6
+Timestamp: 2026-11-15T21:26:16+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+ok then plan for moving the conts to .env
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T21:28:46+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+## What changed
+
+SEC runtime settings now come from `.env` via `loadSecConfig` / `SEC_CONFIG`. `sec.constants.ts` only keeps DI tokens (`SEC_AXIOS`, `SEC_CONFIG`).
+
+**Env keys:** `SEC_USER_AGENT`, `SEC_DATA_BASE_URL`, `SEC_ARCHIVES_BASE_URL`, `SEC_TIMEOUT_MS`, `SEC_MIN_REQUEST_INTERVAL_MS`
+
+**Files:** `.env` / `.env.example`, `sec.config.ts`, updated `sec.module.ts` + `sec.client.ts`, tests, `NOTES.md`
+
+## Checks
+
+- `npm test` — 19 passed  
+- `npm run lint` — 0 errors (existing `main.ts` warning)  
+- `npm run build` — passed  
+- `npm run test:e2e` — passed
+```
+
+## Session 6
+Timestamp: 2026-11-15T21:34:04+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+SecClient.ts is 290 lines. Can we separate the code in smaller files with similar responsibility
+```
+AI response summary:
+
+````
+Yes. `SecClient` currently mixes three jobs: HTTP + rate limiting, SEC JSON mapping, and CIK/URL helpers. Splitting those keeps one Nest injectable as the public surface.
+
+### Suggested layout
+
+```text
+sec/
+  sec.client.ts              # thin orchestrator (~80 lines)
+  sec.module.ts
+  sec.config.ts
+  sec.constants.ts
+  mappers/
+    sec-submissions.mapper.ts
+  utils/
+    sec-identifiers.ts       # normalizeCik, stripLeadingZeros, SAFE file name
+    sec-document-url.ts      # buildPrimaryDocumentUrl*
+  http/
+    map-sec-axios-error.ts   # axios → AppError
+  __tests__/
+    sec.client.spec.ts
+    sec.config.spec.ts
+    sec-submissions.mapper.spec.ts
+    sec-identifiers.spec.ts
+    sec-document-url.spec.ts
+```
+
+| File | Responsibility |
+|---|---|
+| `sec.client.ts` | Inject axios + config; `getCompanySubmissions` / `getSubmissionsFile`; rate-limited `getJson`; call mappers/utils |
+| `mappers/sec-submissions.mapper.ts` | `mapCompany`, `mapFilingArrays`, `mapHistoricalFiles` (pure) |
+| `utils/sec-identifiers.ts` | CIK normalize/strip + safe submissions filename check |
+| `utils/sec-document-url.ts` | Build Archives URLs from CIK + accession + primary doc |
+| `http/map-sec-axios-error.ts` | Map axios failures to `AppError` |
+
+Keep `buildPrimaryDocumentUrl` as a public method on `SecClient` that delegates to `sec-document-url.ts`, so callers and tests do not need to change much.
+
+### What not to do
+
+- Do not turn every private method into its own Nest provider.
+- Do not move axios construction into `common/` (still SEC-scoped).
+- Avoid a giant `sec.helpers.ts`; group by kind (`mappers/`, `utils/`, `http/`) per your skill layout.
+
+### Test split
+
+Move mapping and URL/CIK cases into focused unit tests. Leave `sec.client.spec.ts` for orchestration + error-path wiring with mocked axios.
+
+I'm in Ask mode, so I can't apply this. Switch to Agent mode if you want the refactor done.
+````
+
+## Session 6
+Timestamp: 2026-11-15T21:37:17+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan this changes
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T21:39:05+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+http/
+    map-sec-axios-error.ts should not be in common folder in erros
+```
+AI response summary:
+
+```
+Correct — and the plan already keeps it that way.
+
+`map-sec-axios-error.ts` stays under **`sec/http/`**, not `common/errors/`.
+
+| Location | What belongs there |
+|---|---|
+| `common/errors/app.error.ts` | Shared `AppError` type used by every module |
+| `common/filters/` | Global HTTP response mapping |
+| `sec/http/map-sec-axios-error.ts` | SEC/axios-specific translation into `AppError` |
+
+Putting SEC axios mapping in `common` would couple the whole app to SEC transport details. `SecClient` imports the helper; other modules only see `AppError`.
+
+No plan change needed for that point. Switch to Agent mode when you want the split implemented.
+```
+
+## Session 6
+Timestamp: 2026-11-15T21:40:20+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+## What changed
+
+`SecClient` is now a thin Nest orchestrator. Logic moved to:
+
+| Path | Role |
+|---|---|
+| `sec/mappers/sec-submissions.mapper.ts` | Company / filing / historical file mapping |
+| `sec/utils/sec-identifiers.ts` | CIK + safe filename helpers |
+| `sec/utils/sec-document-url.ts` | Archives document URLs |
+| `sec/http/map-sec-axios-error.ts` | Axios → `AppError` (stays in `sec`, not `common`) |
+
+Tests split to match; client specs cover orchestration only.
+
+## Checks
+
+- `npm test` — 27 passed  
+- `npm run lint` — 0 errors  
+- `npm run build` — passed
+```
+

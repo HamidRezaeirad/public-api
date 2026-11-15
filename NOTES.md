@@ -12,3 +12,18 @@ Why: `typescript-eslint` 8.72 does not support TypeScript 7. The first audit rep
 Decision: Install `@nestjs/swagger` 11.4.8. Serve controller routes under `/api`, and mount Swagger UI at `/docs` with the OpenAPI JSON at `/docs-json`. Share that setup through `configureApp` so bootstrap and e2e use the same paths.
 Rejected: `@nestjs/swagger` 12, mounting Swagger at `/api`, `useGlobalPrefix`, `addServer('/api')`, and `npm audit fix --force`.
 Why: NestJS is 11.2.10, and Swagger 12 peers on Nest 12. A Swagger path of `api` would occupy `GET /api`. Spec paths already include the prefix, so an extra server URL would call `/api/api/...`. Backend `npm audit` reports 6 low findings, all deepmerge via Jest (GHSA-gcqx-w48m-w2h4). Force would install Jest 25.1.0.
+
+## 2026-11-15T20:45+01:00
+Decision: Add `sec` with a shared axios `SecClient`, central `common/errors` + `AppExceptionFilter`, `@nestjs/config` 4.0.4, and `axios` 1.21.1. Space SEC calls at 100ms. Require `SEC_USER_AGENT` with an email contact.
+Rejected: Per-module `*.errors.ts`, `@nestjs/config` 12, `@nestjs/axios`, `npm audit fix --force`, and inventing a real contact email.
+Why: One error shape for later modules. Config 12 peers on Nest 12. Plain axios matches the plan. Audit still shows 6 low deepmerge findings via Jest only.
+
+## 2026-11-15T21:29+01:00
+Decision: Load SEC URLs, timeout, and request spacing from `.env` through `loadSecConfig` / `SEC_CONFIG`. Keep only DI tokens in `sec.constants.ts`.
+Rejected: A shared `common` axios instance, and leaving Archives URL / interval hardcoded in `SecClient`.
+Why: Deploy-time SEC settings belong in env. Axios stays SEC-scoped so fair-access headers do not leak to other callers.
+
+## 2026-11-15T21:41+01:00
+Decision: Split `SecClient` into pure `mappers/`, `utils/`, and `sec/http/map-sec-axios-error.ts` helpers; keep `SecClient` as the Nest orchestrator.
+Rejected: Moving axios error mapping into `common/errors`, and registering helpers as Nest providers.
+Why: SEC transport mapping stays in `sec`. Pure functions stay easy to unit-test without DI.
