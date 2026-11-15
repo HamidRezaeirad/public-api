@@ -38,4 +38,10 @@ Decision: Split `FilingsService` into pure `mappers/` and `utils/` helpers; keep
 Rejected: Registering filter/sort helpers as Nest providers.
 Why: Same pattern as `SecClient` split. Pure functions are easier to unit-test without DI.
 
+## 2026-11-15T22:43+01:00
+Decision: Replace Hello World with `GET /health` (version from package.json + ISO datetime), exclude it from the `/api` prefix, enable CORS for Vite `localhost:5173`, case-insensitive formType, and stricter ISO date validation.
+Rejected: Leaving health under `/api/health`, and inventing a real SEC contact email.
+Why: Load balancers expect `/health`. CORS unblocks the upcoming frontend. Small filter/date fixes close review gaps without redesign.
+
+
 

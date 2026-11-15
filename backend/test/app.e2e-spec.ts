@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { beforeEach, describe, it } from '@jest/globals';
+import { beforeEach, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -19,10 +19,18 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/api (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/api')
-      .expect(200)
-      .expect('Hello World!');
+  it('/health (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/health')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        version: expect.stringMatching(/^\d+\.\d+\.\d+/),
+        datetime: expect.stringMatching(
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+        ),
+      }),
+    );
   });
 });

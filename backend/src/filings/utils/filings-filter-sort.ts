@@ -37,10 +37,10 @@ export function filterFilings(
   filings: readonly SecFilingRecord[],
   query: Pick<ListFilingsQueryDto, 'formType' | 'startDate' | 'endDate'>,
 ): SecFilingRecord[] {
-  const formType = query.formType?.trim();
+  const formType = query.formType?.trim().toUpperCase();
 
   return filings.filter((filing) => {
-    if (formType && filing.formType !== formType) {
+    if (formType && filing.formType.trim().toUpperCase() !== formType) {
       return false;
     }
     if (query.startDate && filing.filingDate < query.startDate) {

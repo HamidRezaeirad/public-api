@@ -1299,3 +1299,119 @@ Tests split to match; service specs cover SEC orchestration only.
 - `npm run build` — passed
 ```
 
+## Session 6
+Timestamp: 2026-11-15T22:32:29+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Before moving to the frontend, please review the backend we have built so far.
+
+Check whether:
+- The endpoints work as expected.
+- The error handling makes sense.
+- The responses are consistent.
+- The SEC document links are correct.
+- The filtering and pagination work properly.
+- We are handling SEC requests responsibly.
+- The code is not unnecessarily complicated.
+
+Please run the available tests.
+
+Tell me if you find anything that should be fixed. Don't make large changes without explaining them first.
+```
+AI response summary:
+
+```
+## Verdict
+
+The backend is in good shape for the frontend. Assignment endpoints, error shape, filtering/pagination, SEC document URLs, and fair-access handling are coherent. Tests pass. Nothing looks like a blocker; a few small gaps are worth knowing before UI work.
+
+## Tests run
+
+| Check | Result |
+|---|---|
+| `npm test` | 45 passed |
+| `npm run test:e2e` | 4 passed |
+| `npm run lint` | passed (existing `main.ts` floating-promise warning only) |
+| `npm run build` | blocked here by Ask-mode sandbox (`EPERM` on `dist/`); it passed in the earlier Agent run |
+
+## Checklist
+
+**Endpoints** — Match the plan: company by ticker, nested filings list, accession detail. Controllers are thin; services own logic.
+
+**Error handling** — Shared `{ statusCode, code, message }` via `AppError` + `AppExceptionFilter`. ValidationPipe 400s map to `bad_request`. Unsupported ticker / missing filing → `not_found`. Upstream SEC failures map to forbidden/rate_limited/timeout/unavailable. Sensible.
+
+**Response consistency** — Company and filing DTOs are stable and independent of raw SEC JSON. List always returns `{ data, page, limit, total, totalPages }`.
+
+**SEC document links** — Built as  
+`{archivesBase}/{cikNoLeadingZeros}/{accessionNoDashes}/{primaryDocument}`  
+from SEC metadata (not guessed). Unit tests cover this.
+
+**Filtering / pagination** — Inclusive filing-date filter, exact `formType`, newest-first with accession tie-break, page/limit with max 100. Covered by unit tests.
+
+**SEC responsibility** — Env User-Agent, timeout, trusted hosts, ~100ms spacing, no retries, axios only in `sec`. Good.
+
+**Complexity** — Modular without over-abstraction. Acceptable for the assignment.
+
+## Issues / gaps (fix only if you want)
+
+1. **No CORS yet** — Frontend on Vite will need `enableCors` (or a proxy). Add when starting the UI.
+2. **Placeholder `SEC_USER_AGENT`** — Live SEC needs a real contact in `.env`; placeholder can get 403.
+3. **History only with `startDate`** — Without `startDate`, list uses recent filings only. Correct and documented in notes; UI should not imply full history unless a start date is set (or you change that later).
+4. **`formType` is case-sensitive** — `10-k` ≠ `10-K`. Optional: normalize to uppercase for matching.
+5. **Dates are format-only** — `YYYY-MM-DD` regex allows `2024-13-40`. Low priority; optional calendar validation.
+6. **Leftover `GET /api` Hello World** — Harmless; remove when polishing.
+7. **Accession lookup can walk many historical files** — Rate-limited and correct, but slow for old accessions. Fine for this scope.
+
+## Suggested next step
+
+Start the frontend against these contracts. Before live smoke: set a real `SEC_USER_AGENT`, then hit `/api/companies/AAPL` and `/api/companies/AAPL/filings?formType=10-K&limit=5`. When wiring the UI, add CORS or a Vite proxy.
+```
+
+## Session 6
+Timestamp: 2026-11-15T22:40:22+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan Change but chnage number 6 to /health and return version and current date time
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T22:42:02+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+## What changed
+
+1. **`GET /health`** — Returns `{ version, datetime }` from `package.json` + `toISOString()`. Excluded from the `/api` prefix.
+2. **CORS** — Allows `http://localhost:5173`.
+3. **`formType`** — Case-insensitive matching.
+4. **Dates** — `YYYY-MM-DD` format plus `IsISO8601({ strict: true })`.
+
+## Checks
+
+- `npm test` — 46 passed  
+- `npm run test:e2e` — 4 passed  
+- `npm run lint` — passed  
+- `npm run build` — passed  
+
+Smoke: `GET http://localhost:3000/health`
+```
+

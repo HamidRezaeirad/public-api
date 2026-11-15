@@ -3,7 +3,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppExceptionFilter } from './common/filters/app-exception.filter';
 
 export function configureApp(app: INestApplication): void {
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: ['health'],
+  });
+  app.enableCors({
+    origin: ['http://localhost:5173'],
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

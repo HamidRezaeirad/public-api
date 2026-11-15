@@ -48,6 +48,16 @@ describe('filings-filter-sort', () => {
     ]);
   });
 
+  it('matches formType case-insensitively', () => {
+    const filtered = filterFilings(filings, {
+      formType: '10-k',
+    });
+
+    expect(filtered.map((item) => item.accessionNumber)).toEqual([
+      '0000320193-24-000123',
+    ]);
+  });
+
   it('sorts by filing date desc then accession desc', () => {
     expect(sortFilings(filings).map((item) => item.accessionNumber)).toEqual([
       '0000320193-24-000200',
