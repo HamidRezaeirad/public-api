@@ -18,8 +18,10 @@ type CompanySelectProps = {
 
 export function CompanySelect({ value, onChange }: CompanySelectProps) {
   return (
-    <div className="flex w-full max-w-xs flex-col gap-2">
-      <Label htmlFor="company-ticker">Company</Label>
+    <div className="flex w-full flex-col gap-1.5 sm:max-w-xs">
+      <Label htmlFor="company-ticker" className="text-xs font-medium">
+        Company ticker
+      </Label>
       <Select
         value={value}
         onValueChange={(next) => {
@@ -28,7 +30,7 @@ export function CompanySelect({ value, onChange }: CompanySelectProps) {
           }
         }}
       >
-        <SelectTrigger id="company-ticker" className="w-full">
+        <SelectTrigger id="company-ticker" className="w-full bg-card">
           <SelectValue placeholder="Select ticker" />
         </SelectTrigger>
         <SelectContent>

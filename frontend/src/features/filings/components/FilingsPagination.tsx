@@ -20,7 +20,7 @@ export function FilingsPagination({
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground">
         Page {page} of {totalPages} · {total} filing{total === 1 ? '' : 's'}
       </p>
@@ -28,6 +28,7 @@ export function FilingsPagination({
         <Button
           type="button"
           variant="outline"
+          size="sm"
           disabled={disabled || page <= 1}
           onClick={() => onPageChange(page - 1)}
         >
@@ -36,6 +37,7 @@ export function FilingsPagination({
         <Button
           type="button"
           variant="outline"
+          size="sm"
           disabled={disabled || page >= totalPages}
           onClick={() => onPageChange(page + 1)}
         >

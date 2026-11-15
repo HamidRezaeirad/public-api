@@ -1616,3 +1616,141 @@ Frontend SEC filings UI is in place under the skill layout with SOLID/DRY bounda
 Run Nest on `:3000`, then `npm run dev` in `frontend/`.
 ```
 
+## Session 6
+Timestamp: 2026-11-15T23:43:18+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+I want you to improve the overall UI/UX design of my existing application.
+
+Analyze the current UI before making changes.
+
+The current design is too plain and has too much white space with almost no use of colors. I want a modern, professional SaaS dashboard design.
+```
+AI response summary:
+
+```
+## Current UI analysis
+
+The app is functionally solid (select → company → filter → table), but visually it reads as a **bare form page**, not a SaaS dashboard.
+
+### What’s wrong today
+
+| Area | Current state | Effect |
+| --- | --- | --- |
+| **Color** | Default shadcn neutral theme: pure white bg, near-black primary, gray borders ([`index.css`](frontend/src/index.css)) | No brand accent; everything feels grayscale |
+| **Layout** | Single column, `space-y-8`, loose stacking ([`CompanyFilingsPage`](frontend/src/pages/CompanyFilingsPage.tsx)) | Large empty regions; weak grouping |
+| **Header** | Text-only border strip ([`AppHeader`](frontend/src/components/shared/AppHeader.tsx)) | No product identity, no density |
+| **Company** | Plain title + muted line ([`CompanyHeader`](frontend/src/features/companies/components/CompanyHeader.tsx)) | No “selected entity” card / status |
+| **Filters** | Naked grid of inputs ([`FilingsFilters`](frontend/src/features/filings/components/FilingsFilters.tsx)) | Controls float with no panel |
+| **Table** | Border only, no header tint / badges ([`FilingsTable`](frontend/src/features/filings/components/FilingsTable.tsx)) | Low scanability |
+| **Hierarchy** | Select → header → “Filings” heading → filters → table all same visual weight | Eye doesn’t know where to land |
+
+### What already works (keep)
+
+- Clear information architecture (company then filings)
+- Loading / error / empty via `StatusMessage`
+- Responsive filter grid + scrollable table
+- shadcn primitives (good base for a polish pass)
+
+---
+
+## Recommended direction (modern SaaS dashboard)
+
+Stay within the skill stack (Tailwind + shadcn). No new libraries. Focus on **surface, color, density, hierarchy**.
+
+### 1. Theme (color without going purple-AI cliché)
+
+Shift tokens in [`index.css`](frontend/src/index.css) to a **slate canvas + teal/emerald accent** (finance-friendly, professional):
+
+- `--background`: soft slate tint (not pure white)
+- `--primary`: saturated teal for CTAs / active states
+- `--card`: white elevated surfaces
+- Optional subtle page gradient or dotted grid behind content
+
+### 2. Shell
+
+- Sticky header with logo mark, product name, short subtitle
+- Main: tighter max width / denser padding (`py-6`, `gap-6`)
+- Soft muted page background so **cards** pop
+
+### 3. Page composition (reduce whitespace by grouping)
+
+1. **Toolbar row** — company select + optional “live / Nest API” chip  
+2. **Company summary card** — name, ticker badge, CIK meta in a grid  
+3. **Filings panel card** — title + count badge, filter bar inside card, table below, pagination footer  
+
+That alone cuts “floating in white” by putting related UI in containers.
+
+### 4. Component polish
+
+- **Ticker**: badge / pill (`AAPL`) with primary-muted fill  
+- **Form types** in table: small outline badges (`10-K`, `10-Q`)  
+- **Filters**: muted inset bar, clearer Apply (primary) vs Reset (ghost)  
+- **Table**: muted header row, hover rows, stronger document link as button-ish  
+- **Empty/error**: keep `StatusMessage`, wrap in the same card surface  
+
+### 5. Motion (light)
+
+- Short fade/slide on company card / table load (CSS/`tw-animate` only)  
+- Avoid decorative noise
+
+---
+
+## Files I’d change (when implementing)
+
+- [`frontend/src/index.css`](frontend/src/index.css) — palette + page atmosphere  
+- [`frontend/src/layouts/MainLayout.tsx`](frontend/src/layouts/MainLayout.tsx)  
+- [`frontend/src/components/shared/AppHeader.tsx`](frontend/src/components/shared/AppHeader.tsx)  
+- [`frontend/src/pages/CompanyFilingsPage.tsx`](frontend/src/pages/CompanyFilingsPage.tsx) — card sections  
+- Feature components under `features/companies` and `features/filings`  
+- Possibly add shadcn `Card` / `Badge` if not already present  
+
+No API or SOLID layering changes needed—this is presentation only.
+
+---
+
+I'm in **Ask mode**, so I can’t apply these edits. Switch to **Agent mode** and ask to implement the SaaS dashboard polish; I’ll restyle against this analysis without changing Nest contracts or feature architecture.
+```
+
+## Session 6
+Timestamp: 2026-11-15T23:45:17+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan this chnages make sure only presentation changes no No API or SOLID layering.
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T23:45:55+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+SaaS dashboard polish is done—presentation only; hooks/services/API untouched.
+
+**Visual changes**
+- Slate canvas + teal primary tokens and soft page gradient in `index.css`
+- Sticky header with teal mark + denser `MainLayout`
+- Toolbar (ticker + Nest API chip), company card, filings card with filter bar / table / footer
+- Badges for ticker & form types, muted table header, outline document buttons
+
+**Verify:** `lint`, `test`, and `build` all pass. Run `npm run dev` in `frontend/` to preview.
+```
+

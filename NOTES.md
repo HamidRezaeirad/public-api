@@ -48,5 +48,10 @@ Decision: Build the Vite React filings UI with feature folders (`companies`, `fi
 Rejected: Calling SEC from the browser, a generic CRUD/service base, inventing a companies-list API, and parking skill deps in a root `package.json`.
 Why: Matches the frontend-react skill and Nest contracts. One Axios client and shared status UI avoid duplication without extra abstraction.
 
+## 2026-11-15T23:47+01:00
+Decision: Restyle the filings explorer as a slate/teal SaaS dashboard (sticky header, toolbar + Card sections, badges, denser spacing) with presentation-only edits.
+Rejected: Purple/dark-default themes, and any API/hook/service or SOLID layering changes.
+Why: Keeps Nest contracts and feature architecture intact while fixing flat whitespace and weak hierarchy.
+
 
 

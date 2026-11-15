@@ -12,14 +12,14 @@ type StatusMessageProps = {
 export function StatusMessage({ status, message, onRetry }: StatusMessageProps) {
   if (status === 'loading') {
     return (
-      <div className="space-y-3" role="status" aria-live="polite">
+      <div className="space-y-2.5" role="status" aria-live="polite">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <LoaderCircle className="size-4 animate-spin" aria-hidden />
           Loading…
         </div>
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-2/3" />
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-2/3" />
       </div>
     )
   }
@@ -29,7 +29,7 @@ export function StatusMessage({ status, message, onRetry }: StatusMessageProps) 
       <Alert variant="destructive">
         <AlertCircle />
         <AlertTitle>Something went wrong</AlertTitle>
-        <AlertDescription className="flex flex-col gap-3">
+        <AlertDescription className="flex flex-col items-start gap-2.5">
           <span>{message ?? 'Request failed'}</span>
           {onRetry ? (
             <Button type="button" variant="outline" size="sm" onClick={onRetry}>
@@ -42,7 +42,7 @@ export function StatusMessage({ status, message, onRetry }: StatusMessageProps) 
   }
 
   return (
-    <Alert>
+    <Alert className="border-dashed bg-muted/40">
       <Inbox />
       <AlertTitle>No results</AlertTitle>
       <AlertDescription>

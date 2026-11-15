@@ -1,4 +1,6 @@
 import { ExternalLink } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -15,36 +17,44 @@ type FilingsTableProps = {
 
 export function FilingsTable({ filings }: FilingsTableProps) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-lg border border-border/80">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Form</TableHead>
-            <TableHead>Filed</TableHead>
-            <TableHead>Report date</TableHead>
-            <TableHead>Accession</TableHead>
-            <TableHead className="text-right">Document</TableHead>
+          <TableRow className="bg-muted/60 hover:bg-muted/60">
+            <TableHead className="font-semibold">Form</TableHead>
+            <TableHead className="font-semibold">Filed</TableHead>
+            <TableHead className="font-semibold">Report date</TableHead>
+            <TableHead className="font-semibold">Accession</TableHead>
+            <TableHead className="text-right font-semibold">Document</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filings.map((filing) => (
-            <TableRow key={filing.accessionNumber}>
-              <TableCell className="font-medium">{filing.formType}</TableCell>
-              <TableCell>{filing.filingDate}</TableCell>
-              <TableCell>{filing.reportDate || '—'}</TableCell>
-              <TableCell className="font-mono text-xs">
+            <TableRow
+              key={filing.accessionNumber}
+              className="hover:bg-accent/40"
+            >
+              <TableCell>
+                <Badge variant="outline">{filing.formType}</Badge>
+              </TableCell>
+              <TableCell className="text-sm">{filing.filingDate}</TableCell>
+              <TableCell className="text-sm">
+                {filing.reportDate || '—'}
+              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">
                 {filing.accessionNumber}
               </TableCell>
               <TableCell className="text-right">
-                <a
-                  href={filing.primaryDocumentUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  Open
-                  <ExternalLink className="size-3.5" aria-hidden />
-                </a>
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={filing.primaryDocumentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open
+                    <ExternalLink className="size-3.5" aria-hidden />
+                  </a>
+                </Button>
               </TableCell>
             </TableRow>
           ))}

@@ -32,64 +32,75 @@ export function FilingsFilters({
 
   return (
     <form
-      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="rounded-lg border border-border/80 bg-muted/50 p-4"
       onSubmit={handleSubmit(onApply)}
       noValidate
     >
-      <div className="space-y-2 text-left">
-        <Label htmlFor="formType">Form type</Label>
-        <Input
-          id="formType"
-          placeholder="e.g. 10-K"
-          disabled={disabled || isSubmitting}
-          {...register('formType')}
-        />
-        {errors.formType ? (
-          <p className="text-sm text-destructive">{errors.formType.message}</p>
-        ) : null}
-      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="formType" className="text-xs">
+            Form type
+          </Label>
+          <Input
+            id="formType"
+            placeholder="e.g. 10-K"
+            className="bg-card"
+            disabled={disabled || isSubmitting}
+            {...register('formType')}
+          />
+          {errors.formType ? (
+            <p className="text-sm text-destructive">{errors.formType.message}</p>
+          ) : null}
+        </div>
 
-      <div className="space-y-2 text-left">
-        <Label htmlFor="startDate">Start date</Label>
-        <Input
-          id="startDate"
-          type="date"
-          disabled={disabled || isSubmitting}
-          {...register('startDate')}
-        />
-        {errors.startDate ? (
-          <p className="text-sm text-destructive">{errors.startDate.message}</p>
-        ) : null}
-      </div>
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="startDate" className="text-xs">
+            Start date
+          </Label>
+          <Input
+            id="startDate"
+            type="date"
+            className="bg-card"
+            disabled={disabled || isSubmitting}
+            {...register('startDate')}
+          />
+          {errors.startDate ? (
+            <p className="text-sm text-destructive">{errors.startDate.message}</p>
+          ) : null}
+        </div>
 
-      <div className="space-y-2 text-left">
-        <Label htmlFor="endDate">End date</Label>
-        <Input
-          id="endDate"
-          type="date"
-          disabled={disabled || isSubmitting}
-          {...register('endDate')}
-        />
-        {errors.endDate ? (
-          <p className="text-sm text-destructive">{errors.endDate.message}</p>
-        ) : null}
-      </div>
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="endDate" className="text-xs">
+            End date
+          </Label>
+          <Input
+            id="endDate"
+            type="date"
+            className="bg-card"
+            disabled={disabled || isSubmitting}
+            {...register('endDate')}
+          />
+          {errors.endDate ? (
+            <p className="text-sm text-destructive">{errors.endDate.message}</p>
+          ) : null}
+        </div>
 
-      <div className="flex items-end gap-2">
-        <Button type="submit" disabled={disabled || isSubmitting}>
-          Apply filters
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled || isSubmitting}
-          onClick={() => {
-            reset(emptyFilingsFilters)
-            onApply(emptyFilingsFilters)
-          }}
-        >
-          Reset
-        </Button>
+        <div className="flex items-end gap-2">
+          <Button type="submit" disabled={disabled || isSubmitting}>
+            Apply filters
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={disabled || isSubmitting}
+            onClick={() => {
+              reset(emptyFilingsFilters)
+              onApply(emptyFilingsFilters)
+            }}
+          >
+            Reset
+          </Button>
+        </div>
       </div>
     </form>
   )

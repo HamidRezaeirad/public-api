@@ -1,5 +1,15 @@
 import { useState } from 'react'
+import { Server } from 'lucide-react'
 import { StatusMessage } from '@/components/shared/StatusMessage'
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { CompanyHeader } from '@/features/companies/components/CompanyHeader'
 import { CompanySelect } from '@/features/companies/components/CompanySelect'
 import { useCompany } from '@/features/companies/hooks/useCompany'
@@ -34,69 +44,97 @@ export function CompanyFilingsPage() {
     filings.resetForTicker()
   }
 
+  const filingsTotal = filings.data?.total
+
   return (
     <MainLayout>
-      <div className="space-y-8">
-        <section className="space-y-4">
+      <div className="space-y-6">
+        <section className="flex flex-col gap-3 rounded-xl border border-border/80 bg-card/80 p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
           <CompanySelect value={ticker} onChange={handleTickerChange} />
-
-          {companyQuery.isLoading ? (
-            <StatusMessage status="loading" />
-          ) : null}
-
-          {companyQuery.isError ? (
-            <StatusMessage
-              status="error"
-              message={errorMessage(companyQuery.error)}
-              onRetry={() => void companyQuery.refetch()}
-            />
-          ) : null}
-
-          {companyQuery.data ? (
-            <CompanyHeader company={companyQuery.data} />
-          ) : null}
+          <Badge variant="secondary" className="w-fit gap-1.5 self-start sm:self-auto">
+            <Server className="size-3" aria-hidden />
+            Nest API
+          </Badge>
         </section>
 
-        <section className="space-y-4">
-          <div className="space-y-1 text-left">
-            <h3 className="text-lg font-semibold">Filings</h3>
-            <p className="text-sm text-muted-foreground">
+        <Card className="shadow-sm">
+          <CardHeader className="border-b pb-4">
+            <CardTitle className="text-base">Company</CardTitle>
+            <CardDescription>
+              Selected issuer from the supported ticker set.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-2">
+            {companyQuery.isLoading ? (
+              <StatusMessage status="loading" />
+            ) : null}
+
+            {companyQuery.isError ? (
+              <StatusMessage
+                status="error"
+                message={errorMessage(companyQuery.error)}
+                onRetry={() => void companyQuery.refetch()}
+              />
+            ) : null}
+
+            {companyQuery.data ? (
+              <CompanyHeader company={companyQuery.data} />
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="border-b pb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="text-base">Filings</CardTitle>
+              {typeof filingsTotal === 'number' ? (
+                <Badge variant="secondary">{filingsTotal} total</Badge>
+              ) : null}
+            </div>
+            <CardDescription>
               Filter by form type and inclusive filing dates.
-            </p>
-          </div>
-
-          <FilingsFilters
-            values={filings.filters}
-            onApply={filings.applyFilters}
-            disabled={filings.isFetching}
-          />
-
-          {filings.isLoading ? <StatusMessage status="loading" /> : null}
-
-          {filings.isError ? (
-            <StatusMessage
-              status="error"
-              message={errorMessage(filings.error)}
-              onRetry={() => void filings.refetch()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-2">
+            <FilingsFilters
+              values={filings.filters}
+              onApply={filings.applyFilters}
+              disabled={filings.isFetching}
             />
-          ) : null}
 
-          {!filings.isLoading &&
-          !filings.isError &&
-          filings.data &&
-          filings.data.data.length === 0 ? (
-            <StatusMessage
-              status="empty"
-              message="No filings for these filters."
-            />
-          ) : null}
+            {filings.isLoading ? <StatusMessage status="loading" /> : null}
+
+            {filings.isError ? (
+              <StatusMessage
+                status="error"
+                message={errorMessage(filings.error)}
+                onRetry={() => void filings.refetch()}
+              />
+            ) : null}
+
+            {!filings.isLoading &&
+            !filings.isError &&
+            filings.data &&
+            filings.data.data.length === 0 ? (
+              <StatusMessage
+                status="empty"
+                message="No filings for these filters."
+              />
+            ) : null}
+
+            {!filings.isLoading &&
+            !filings.isError &&
+            filings.data &&
+            filings.data.data.length > 0 ? (
+              <FilingsTable filings={filings.data.data} />
+            ) : null}
+          </CardContent>
 
           {!filings.isLoading &&
           !filings.isError &&
           filings.data &&
           filings.data.data.length > 0 ? (
-            <div className="space-y-4">
-              <FilingsTable filings={filings.data.data} />
+            <CardFooter className="border-t">
               <FilingsPagination
                 page={filings.data.page}
                 totalPages={filings.data.totalPages}
@@ -104,9 +142,9 @@ export function CompanyFilingsPage() {
                 onPageChange={filings.setPage}
                 disabled={filings.isFetching}
               />
-            </div>
+            </CardFooter>
           ) : null}
-        </section>
+        </Card>
       </div>
     </MainLayout>
   )
