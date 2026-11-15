@@ -208,3 +208,200 @@ Checks run in `frontend/`:
 Vitest 5.1 and jsdom 31 omit Node 25 from their engines. This machine is Node 25.9.0, and the checks above still passed. Test commands are in `frontend/README.md`, and the stack decision is in `NOTES.md`.
 ```
 
+## Session 5
+Timestamp: 2026-11-15T19:49:45+01:00
+Tool: Cursor
+Model: grok-4.7
+Prompt:
+
+```
+I want to add swagger to the backend project.
+```
+AI response summary:
+
+````
+The backend is still the NestJS 11 starter (`@nestjs/common` 11.2.10) with a single `GET /` route. Swagger belongs in bootstrap, using `@nestjs/swagger` **11.4.8**. The current release, 12.1.2, peers on NestJS 12 and will not install cleanly here.
+
+I'm in Ask mode, so this is the change set only. Switch to Agent mode if you want it applied.
+
+## Install
+
+From `backend/`:
+
+```bash
+npm install @nestjs/swagger@11
+```
+
+That resolves to 11.4.8 and matches the existing `^11` Nest packages. `class-validator` and `class-transformer` are optional peers, and `@fastify/static` is only for Fastify. This app uses Express and has no validation DTOs yet, so leave those out. Swagger UI ships inside the package via `swagger-ui-dist`.
+
+After install, run `npm audit` in `backend/` and record the result.
+
+## Bootstrap
+
+Keep this in `backend/src/main.ts`. It is global app configuration, same as the listen call.
+
+```typescript
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  const config = new DocumentBuilder()
+    .setTitle('SEC EDGAR filings')
+    .setDescription('Read-only filings API for the supported tickers.')
+    .setVersion('1.0')
+    .build();
+
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, documentFactory);
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+```
+
+With the server on port 3000:
+
+- UI: `http://localhost:3000/docs`
+- OpenAPI JSON: `http://localhost:3000/docs-json`
+
+`GET /` will show up from the existing controller. There is no global prefix today, so `/docs` stays at the root. The e2e test builds the app through `Test.createTestingModule` and never runs `main.ts`, so that test stays unchanged. Add a docs-route test only if you also call `SwaggerModule.setup` in the test app.
+
+## CLI plugin
+
+Add the plugin in `backend/nest-cli.json` so later DTO classes are picked up from their TypeScript types during `nest start` and `nest build`:
+
+```json
+"compilerOptions": {
+  "deleteOutDir": true,
+  "plugins": [
+    {
+      "name": "@nestjs/swagger",
+      "options": {
+        "classValidatorShim": true,
+        "introspectComments": true,
+        "dtoFileNameSuffix": [".dto.ts"]
+      }
+    }
+  ]
+}
+```
+
+The plugin runs only inside the Nest compiler. Jest uses `ts-jest`, so inferred `@ApiProperty` metadata is absent in unit tests. Put explicit `@ApiProperty()` (and `@ApiOkResponse()`) on the public filing DTOs when those endpoints exist. `classValidatorShim` does nothing until `class-validator` is added with the validation pipe.
+
+## What to document once the API exists
+
+Decorate the real contracts, not the starter greeting: company lookup, filing list (form type, date range, page, limit), and filing-by-accession. Response fields stay the public ones: form type, filing date, report date, accession number, primary document URL, and pagination metadata. Document status codes the API actually returns (400, 404, and the upstream 502/503/504 mapping).
+
+Mention `http://localhost:3000/docs` in the README next to the endpoint examples. The assignment still expects those examples to be checked against real responses.
+
+Serve the UI in every environment for this assignment. The API is read-only and has no credentials.
+````
+
+## Session 5
+Timestamp: 2026-11-15T20:01:18+01:00
+Tool: Cursor
+Model: grok-4.7
+Prompt:
+
+```
+I want to add Global API prefix, api also
+```
+AI response summary:
+
+````
+Use `api` as the global prefix for controller routes, and keep Swagger at `/docs`. Mounting Swagger at `api` as well would occupy the same path as the prefixed `GET /` handler.
+
+`setGlobalPrefix('api')` rewrites every controller route. The starter `GET /` becomes `GET /api`. A later `@Controller('companies')` becomes `/api/companies`. Leave `api` out of the controller paths.
+
+Swagger does not follow that prefix unless you opt in. With the default `useGlobalPrefix: false`, the UI stays at `/docs` and the spec stays at `/docs-json`. Operation paths in that spec still include `/api`, because `ignoreGlobalPrefix` defaults to false, so Try it out calls `/api` on the host root. Do not also call `DocumentBuilder.addServer('/api')`; the prefix would appear twice.
+
+```typescript
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api');
+
+  const config = new DocumentBuilder()
+    .setTitle('SEC EDGAR filings')
+    .setDescription('Read-only filings API for the supported tickers.')
+    .setVersion('1.0')
+    .build();
+
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, documentFactory);
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+```
+
+On port 3000 that is:
+
+- `GET http://localhost:3000/api`
+- UI: `http://localhost:3000/docs`
+- OpenAPI JSON: `http://localhost:3000/docs-json`
+
+`@nestjs/swagger` is still not installed. Use `@nestjs/swagger@11` (11.4.8) with the NestJS 11.2.10 already in `backend/package.json`.
+
+The e2e test builds the app with `Test.createTestingModule` and never runs `main.ts`, so it still requests `GET /`. Call `setGlobalPrefix('api')` on that test app before `app.init()`, and change the request to `GET /api`. The same applies to `SwaggerModule.setup` if a test should hit `/docs`. A small shared `configureApp(app)` used by `main.ts` and the e2e file keeps those paths identical.
+
+If the UI should live under the prefix, pass `{ useGlobalPrefix: true }` and keep the setup path as `docs`. That serves the UI at `/api/docs` and the JSON at `/api/docs-json`, and it does not take over `GET /api`.
+````
+
+## Session 5
+Timestamp: 2026-11-15T20:03:28+01:00
+Tool: Cursor
+Model: grok-4.7
+Prompt:
+
+```
+plan chnages
+```
+AI response summary:
+
+```
+```
+
+## Session 5
+Timestamp: 2026-11-15T20:04:10+01:00
+Tool: Cursor
+Model: grok-4.7
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+Controller routes are now under `/api`, and Swagger is served beside them at `/docs`.
+
+`configureApp` in `backend/src/configure-app.ts` sets the prefix and mounts the OpenAPI UI. `backend/src/main.ts` and the e2e test both call it, so `GET /api` is the route under test. `@nestjs/swagger` 11.4.8 matches the installed NestJS 11.2.10. The spec lists `/api` and does not add a second `/api` server URL.
+
+On port 3000:
+
+- `GET http://localhost:3000/api`
+- Swagger UI: `http://localhost:3000/docs`
+- OpenAPI JSON: `http://localhost:3000/docs-json`
+
+Files changed: `backend/package.json`, `backend/package-lock.json`, `backend/src/configure-app.ts`, `backend/src/main.ts`, `backend/nest-cli.json`, `backend/test/app.e2e-spec.ts`, `backend/README.md`, and `NOTES.md`.
+
+Checks from `backend/`:
+
+- `npm test`: 1 suite, 1 test passed
+- `npm run test:e2e`: 1 suite, 1 test passed (`GET /api` returns `Hello World!`)
+- `npm run lint`: 0 errors, 1 existing warning (`bootstrap()` is a floating promise in `main.ts`)
+- `npm run build`: passed
+- `npm audit`: 6 low findings, all `deepmerge` via Jest (GHSA-gcqx-w48m-w2h4). `npm audit fix --force` would install Jest 25.1.0, so it was not applied
+
+A local smoke test on port 3001 returned `Hello World!` from `GET /api`, HTML 200 from `/docs`, and an OpenAPI document titled “SEC EDGAR filings” 1.0 whose only path is `/api`. Port 3000 was already in use, so that process was left alone.
+```
+
