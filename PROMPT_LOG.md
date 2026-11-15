@@ -1063,3 +1063,239 @@ Tests split to match; client specs cover orchestration only.
 - `npm run build` — passed
 ```
 
+## Session 6
+Timestamp: 2026-11-15T21:51:27+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Now let's work on getting company and filing information from SEC EDGAR.
+
+Please create the service that communicates with the SEC API.
+
+I want all SEC requests to go through the backend, not directly from the frontend.
+
+Please make sure we handle the SEC requirements properly, including the User-Agent, request limits and errors.
+
+Keep the implementation simple and explain how the company information and filing data are retrieved.
+
+Before finishing, tell me what you implemented and how I can test it.
+```
+AI response summary:
+
+````
+This is already implemented. I'm in Ask mode, so I can't change files; here's what exists and how to test it.
+
+## What you already have
+
+All SEC traffic goes through the Nest `sec` module. The frontend does not call SEC.
+
+**`SecClient`** (`backend/src/sec/sec.client.ts`) is the service:
+
+| Method | Purpose |
+|---|---|
+| `getCompanySubmissions(cik)` | Company + recent filings + historical file list |
+| `getSubmissionsFile(fileName)` | Older filings from a submissions JSON file |
+| `buildPrimaryDocumentUrl(...)` | Link to the filing on sec.gov |
+
+Supporting pieces: env config (`SEC_USER_AGENT`, URLs, timeout, 100ms spacing), axios in `SecModule`, mappers/utils, and `AppError` mapping. Wired in `AppModule` via `SecModule`.
+
+## How data is retrieved
+
+1. **Company** — `GET https://data.sec.gov/submissions/CIK##########.json` → name, CIK, tickers, exchanges  
+2. **Recent filings** — `filings.recent` parallel arrays → form, dates, accession, primary doc + Archives URL  
+3. **History** — `filings.files` names → `getSubmissionsFile`  
+4. **Document URL** — `https://www.sec.gov/Archives/edgar/data/{cik}/{accessionNoDashes}/{primaryDocument}`
+
+Fair access: descriptive User-Agent from env, ≥100ms between requests, timeouts, no uncontrolled retries. Errors become shared `AppError` codes (404/403/429/timeout/502).
+
+## What is not done yet
+
+No public REST routes for companies/filings, and no ticker→CIK `companies` module. `SecClient` is ready for those next.
+
+## How to test
+
+```bash
+cd backend
+npm test          # mocked SEC (unit tests)
+npm run lint
+npm run build
+npm run start:dev # hello still at GET /api ; Swagger at /docs
+```
+
+For a live SEC call later: set a real `SEC_USER_AGENT` like `SEC Filings API you@email.com` in `backend/.env`, then use `companies`/`filings` routes once they exist (or a temporary Nest test that injects `SecClient`).
+
+If you want the next step (companies + filings API), switch to Agent mode and say so.
+````
+
+## Session 6
+Timestamp: 2026-11-15T21:54:12+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan changes
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T22:03:18+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+````
+## What changed
+
+Read-only companies/filings API on top of `SecClient`:
+
+| Endpoint | Behavior |
+|---|---|
+| `GET /api/companies/:ticker` | Static lookup for AAPL, META, GOOGL, AMZN, NFLX, GS |
+| `GET /api/companies/:ticker/filings` | Newest first; `formType`, inclusive `startDate`/`endDate`, `page`/`limit` |
+| `GET /api/companies/:ticker/filings/:accessionNumber` | One filing (recent, then historical) |
+
+Also: `class-validator` / `class-transformer`, global `ValidationPipe`, historical SEC files when `startDate` is older than recent.
+
+## How to test
+
+```bash
+cd backend
+npm test
+npm run test:e2e
+npm run start:dev
+```
+
+Then (with a real `SEC_USER_AGENT` in `.env`):
+
+- `GET http://localhost:3000/api/companies/AAPL`
+- `GET http://localhost:3000/api/companies/AAPL/filings?formType=10-K&limit=5`
+- Swagger: `http://localhost:3000/docs`
+
+## Checks
+
+- `npm test` — 38 passed  
+- `npm run test:e2e` — 4 passed  
+- `npm run lint` — 0 errors  
+- `npm run build` — passed
+````
+
+## Session 6
+Timestamp: 2026-11-15T22:14:05+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+FilingsService.ts is 200 lines. How can we split it into smaller files based on responsibility
+```
+AI response summary:
+
+````
+Yes. Keep `FilingsService` as the Nest orchestrator (resolve company, call `SecClient`, return DTOs). Move the pure list logic into helpers, same idea as the `sec/` split.
+
+### Suggested layout
+
+```text
+filings/
+  filings.service.ts              # ~60–80 lines: list + findByAccession
+  filings.controller.ts
+  filings.module.ts
+  dtos/...
+  mappers/
+    filing.mapper.ts              # toDto
+  utils/
+    filings-query.ts              # assertDateRange
+    filings-filter-sort.ts        # filter, sort, oldestFilingDate, mergeByAccession
+    historical-files.ts           # fileOverlapsRange (+ optionally select overlapping refs)
+  __tests__/
+    filings.service.spec.ts       # orchestration with mocked SecClient
+    filings-filter-sort.spec.ts
+    historical-files.spec.ts
+    filing.mapper.spec.ts
+```
+
+| File | Move from current service |
+|---|---|
+| `mappers/filing.mapper.ts` | `toDto` |
+| `utils/filings-query.ts` | `assertDateRange` |
+| `utils/filings-filter-sort.ts` | `filterFilings`, `sortFilings`, `oldestFilingDate`, `mergeByAccession` |
+| `utils/historical-files.ts` | `fileOverlapsRange` |
+
+`loadHistoricalFilings` can stay on the service (it needs `SecClient`), or become something like `loadOverlappingHistoricalFilings(secClient, files, start, end)` in a small `filings/loaders/` helper if you want the service even thinner.
+
+### What stays in `FilingsService`
+
+1. `list` — validate → company → submissions → maybe history → filter/sort/paginate → map  
+2. `findByAccession` — company → recent → walk historical files → map or `not_found`
+
+No new Nest providers for pure helpers.
+
+### Tests
+
+Move inclusive date/form/sort/pagination cases into `filings-filter-sort.spec.ts`. Leave service specs for “calls SEC / merges history / not found”.
+
+I'm in Ask mode, so I can't apply this. Switch to Agent mode if you want the refactor done.
+````
+
+## Session 6
+Timestamp: 2026-11-15T22:15:10+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan this changes
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-15T22:15:39+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+## What changed
+
+`FilingsService` is now a thin orchestrator. Logic moved to:
+
+| Path | Role |
+|---|---|
+| `filings/mappers/filing.mapper.ts` | `toFilingDto` |
+| `filings/utils/filings-query.ts` | Date range validation |
+| `filings/utils/filings-filter-sort.ts` | Filter, sort, merge, paginate, oldest date |
+| `filings/utils/historical-files.ts` | Historical file range overlap |
+
+Tests split to match; service specs cover SEC orchestration only.
+
+## Checks
+
+- `npm test` — 45 passed  
+- `npm run test:e2e` — 4 passed  
+- `npm run lint` — 0 errors  
+- `npm run build` — passed
+```
+

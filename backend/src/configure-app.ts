@@ -1,9 +1,20 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppExceptionFilter } from './common/filters/app-exception.filter';
 
 export function configureApp(app: INestApplication): void {
   app.setGlobalPrefix('api');
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+        exposeDefaultValues: true,
+      },
+    }),
+  );
   app.useGlobalFilters(new AppExceptionFilter());
 
   const config = new DocumentBuilder()

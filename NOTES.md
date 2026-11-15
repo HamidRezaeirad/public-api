@@ -27,3 +27,15 @@ Why: Deploy-time SEC settings belong in env. Axios stays SEC-scoped so fair-acce
 Decision: Split `SecClient` into pure `mappers/`, `utils/`, and `sec/http/map-sec-axios-error.ts` helpers; keep `SecClient` as the Nest orchestrator.
 Rejected: Moving axios error mapping into `common/errors`, and registering helpers as Nest providers.
 Why: SEC transport mapping stays in `sec`. Pure functions stay easy to unit-test without DI.
+
+## 2026-11-15T22:05+01:00
+Decision: Add `companies` and `filings` REST modules under `/api/companies/:ticker` and nested filings routes. Static ticker→CIK registry; filings filter on inclusive filing dates; load historical SEC files when `startDate` is older than recent.
+Rejected: Enriching company GET via live SEC, and a top-level `/api/filings` accession route without ticker.
+Why: Nested routes match the assignment UX. Static company lookup avoids SEC for ticker search. Historical fetch stays scoped to overlapping ranges.
+
+## 2026-11-15T22:16+01:00
+Decision: Split `FilingsService` into pure `mappers/` and `utils/` helpers; keep the service as Nest orchestration over CompaniesService + SecClient.
+Rejected: Registering filter/sort helpers as Nest providers.
+Why: Same pattern as `SecClient` split. Pure functions are easier to unit-test without DI.
+
+
