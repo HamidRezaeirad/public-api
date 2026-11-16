@@ -53,5 +53,10 @@ Decision: Restyle the filings explorer as a slate/teal SaaS dashboard (sticky he
 Rejected: Purple/dark-default themes, and any API/hook/service or SOLID layering changes.
 Why: Keeps Nest contracts and feature architecture intact while fixing flat whitespace and weak hierarchy.
 
+## 2026-11-16T21:40+01:00
+Decision: Replace empty/root Nest/Vite template READMEs with beginner-friendly root, backend, and frontend docs (install, env, run, build, test, lint, local URLs, Swagger).
+Rejected: Keeping vendor template READMEs, and inventing a frontend format script that does not exist.
+Why: New developers need accurate monorepo setup steps; docs stay aligned with real npm scripts and `.env.example` values.
+
 
 

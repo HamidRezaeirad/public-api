@@ -1754,3 +1754,91 @@ SaaS dashboard polish is done—presentation only; hooks/services/API untouched.
 **Verify:** `lint`, `test`, and `build` all pass. Run `npm run dev` in `frontend/` to preview.
 ```
 
+## Session 6
+Timestamp: 2026-11-16T21:38:18+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Please update the README.md files in the root, frontend, and backend directories to make it easy for developers to understand and work with the project.
+
+Project Overview: A short description of the project and its purpose.
+Tech Stack: Briefly describe the technologies, frameworks, and libraries used in the frontend and backend.
+Installation: Explain how to clone the repository and install all required dependencies.
+Environment Configuration: List all required environment variables and explain how to configure the .env files. Include examples where helpful.
+Running the Project: Provide step-by-step instructions to start the frontend and backend locally.
+Build: Explain how to build the frontend and backend for production.
+Testing: Include commands for running tests.
+Linting: Include commands for running lint checks and formatting the code.
+Local URLs: Provide the local development URLs for the frontend and backend.
+API Documentation: If Swagger or other API documentation is available, include its URL and instructions on how to access it.
+Keep the documentation simple, clear, and beginner-friendly
+```
+AI response summary:
+
+```
+I'm in **Ask mode**, so I can't edit the README files. Switch to **Agent mode** and ask me to update them—I'll write all three.
+
+Here's the accurate content based on the repo today:
+
+### Current state
+- Root [`README.md`](README.md) is **empty**
+- [`backend/README.md`](backend/README.md) is the NestJS template
+- [`frontend/README.md`](frontend/README.md) is the Vite template
+
+### Facts to document
+
+| Item | Value |
+| --- | --- |
+| Backend | NestJS 11, TypeScript, Axios (SEC only), Swagger, ConfigModule |
+| Frontend | React 19, Vite, Tailwind, shadcn, TanStack Query, Axios, RHF+Zod |
+| Backend env | Copy `backend/.env.example` → `.env`; set real `SEC_USER_AGENT` email |
+| Frontend env | `VITE_API_BASE_URL=http://localhost:3000` |
+| Run | `npm run start:dev` in `backend/`; `npm run dev` in `frontend/` |
+| URLs | UI `http://localhost:5173`, API `http://localhost:3000`, health `/health`, Swagger `/docs`, API `/api/...` |
+| Format | Backend: `npm run format` (Prettier). Frontend: lint only (`npm run lint`)—no format script |
+
+### Suggested README split
+1. **Root** — overview, stack, clone + install both apps, env pointers, run both, local URLs, link to Swagger  
+2. **Backend** — Nest details, SEC env vars (from `.env.example`), start/build/test/lint/format, `/docs`  
+3. **Frontend** — Vite/React stack, `VITE_API_BASE_URL`, start/build/test/lint, needs backend running  
+
+Switch to Agent mode and say “update the three READMEs” and I’ll apply this.
+```
+
+## Session 6
+Timestamp: 2026-11-16T21:39:30+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+plan changes
+```
+AI response summary:
+
+```
+```
+
+## Session 6
+Timestamp: 2026-11-16T21:39:58+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+Updated all three READMEs and logged the decision in `NOTES.md`.
+
+- **[`README.md`](README.md)** — project overview, stack, install both apps, env pointers, run/build/test/lint, URL table, Swagger link  
+- **[`backend/README.md`](backend/README.md)** — Nest API, full `SEC_*` / `PORT` env table, scripts, health + API + `/docs`  
+- **[`frontend/README.md`](frontend/README.md)** — React UI, `VITE_API_BASE_URL`, Nest dependency, scripts (lint only—no format script)
+```
+
