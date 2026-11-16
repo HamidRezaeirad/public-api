@@ -8,6 +8,7 @@ export interface SecConfig {
   readonly archivesBaseUrl: string;
   readonly timeoutMs: number;
   readonly minRequestIntervalMs: number;
+  readonly cacheTtlMs: number;
   readonly userAgent: string;
 }
 
@@ -46,6 +47,7 @@ export function loadSecConfig(config: ConfigService): SecConfig {
       config,
       'SEC_MIN_REQUEST_INTERVAL_MS',
     ),
+    cacheTtlMs: optionalNonNegativeNumber(config, 'SEC_CACHE_TTL_MS', 300_000),
   };
 }
 
@@ -62,6 +64,22 @@ function requirePositiveNumber(config: ConfigService, key: string): number {
   const value = Number(raw);
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error(`${key} must be a positive number.`);
+  }
+  return value;
+}
+
+function optionalNonNegativeNumber(
+  config: ConfigService,
+  key: string,
+  fallback: number,
+): number {
+  const raw = config.get<string>(key)?.trim();
+  if (!raw) {
+    return fallback;
+  }
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${key} must be a non-negative number.`);
   }
   return value;
 }

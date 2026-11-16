@@ -71,6 +71,8 @@ describe('Companies and filings (e2e)', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -87,6 +89,23 @@ describe('Companies and filings (e2e)', () => {
     await app.close();
   });
 
+  it('GET /api/companies', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/companies')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        {
+          ticker: 'AAPL',
+          name: 'Apple Inc.',
+          cik: '0000320193',
+        },
+      ]),
+    );
+    expect(response.body).toHaveLength(6);
+  });
+
   it('GET /api/companies/AAPL', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/companies/AAPL')
@@ -97,6 +116,18 @@ describe('Companies and filings (e2e)', () => {
       name: 'Apple Inc.',
       cik: '0000320193',
     });
+  });
+
+  it('GET /api/companies/AAPL/filings/:accessionNumber rejects invalid accession', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/companies/AAPL/filings/not-valid')
+      .expect(400);
+
+    expect(response.body).toMatchObject({
+      statusCode: 400,
+      code: 'bad_request',
+    });
+    expect(secClient.getCompanySubmissions).not.toHaveBeenCalled();
   });
 
   it('GET /api/companies/AAPL/filings?formType=10-K', async () => {

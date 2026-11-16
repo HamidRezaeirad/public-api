@@ -6,17 +6,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import {
-  SUPPORTED_TICKERS,
-  type SupportedTicker,
-} from '../types/company.types'
+import type { Company } from '../types/company.types'
 
 type CompanySelectProps = {
-  value: SupportedTicker
-  onChange: (ticker: SupportedTicker) => void
+  value: string
+  companies: Company[]
+  onChange: (ticker: string) => void
+  disabled?: boolean
 }
 
-export function CompanySelect({ value, onChange }: CompanySelectProps) {
+export function CompanySelect({
+  value,
+  companies,
+  onChange,
+  disabled = false,
+}: CompanySelectProps) {
   return (
     <div className="flex w-full flex-col gap-1.5 sm:max-w-xs">
       <Label htmlFor="company-ticker" className="text-xs font-medium">
@@ -24,9 +28,10 @@ export function CompanySelect({ value, onChange }: CompanySelectProps) {
       </Label>
       <Select
         value={value}
+        disabled={disabled || companies.length === 0}
         onValueChange={(next) => {
           if (next) {
-            onChange(next as SupportedTicker)
+            onChange(next)
           }
         }}
       >
@@ -34,9 +39,9 @@ export function CompanySelect({ value, onChange }: CompanySelectProps) {
           <SelectValue placeholder="Select ticker" />
         </SelectTrigger>
         <SelectContent>
-          {SUPPORTED_TICKERS.map((ticker) => (
-            <SelectItem key={ticker} value={ticker}>
-              {ticker}
+          {companies.map((company) => (
+            <SelectItem key={company.ticker} value={company.ticker}>
+              {company.ticker}
             </SelectItem>
           ))}
         </SelectContent>

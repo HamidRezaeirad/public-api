@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { toApiError } from '@/lib/axios'
 import { getFilings } from '../services/filingsService'
 import {
   emptyFilingsFilters,
@@ -17,13 +16,7 @@ export function useFilings(ticker: string) {
 
   const filingsQuery = useQuery({
     queryKey: ['filings', ticker, query],
-    queryFn: async () => {
-      try {
-        return await getFilings(ticker, query)
-      } catch (error) {
-        throw toApiError(error)
-      }
-    },
+    queryFn: ({ signal }) => getFilings(ticker, query, signal),
     enabled: Boolean(ticker),
   })
 

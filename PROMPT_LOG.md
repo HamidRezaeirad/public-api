@@ -1842,3 +1842,323 @@ Updated all three READMEs and logged the decision in `NOTES.md`.
 - **[`frontend/README.md`](frontend/README.md)** — React UI, `VITE_API_BASE_URL`, Nest dependency, scripts (lint only—no format script)
 ```
 
+## Session 7
+Timestamp: 2026-11-16T22:24:11+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Use the code-review skill to review my entire project.
+
+Read:
+.cursor/skills/code-review/SKILL.md
+
+Review both frontend (React + TypeScript) and backend (NestJS).
+
+Identify bugs, architectural issues, security risks, performance problems and code quality improvements.
+```
+AI response summary:
+
+````
+### Summary
+
+Solid assignment-scope architecture: Nest modules isolate SEC I/O, filings orchestration, and company lookup; the React app uses a clean feature split with typed Axios + TanStack Query. No CRITICAL security flaws found. The main gaps are **historical filings correctness** (especially `endDate`-only), **unbounded SEC fan-out** on list/accession paths, and a few **frontend error/a11y** inconsistencies. Frontend↔backend contracts otherwise align.
+
+Tests were **not executed** in this review; findings are from source inspection.
+
+---
+
+### Findings
+
+#### 1. HIGH — Historical files never load for `endDate`-only (or any query without `startDate`)
+
+**Where:** `backend/src/filings/filings.service.ts` (`list`)
+
+```42:52:backend/src/filings/filings.service.ts
+    if (
+      query.startDate &&
+      (oldestRecent === undefined || query.startDate < oldestRecent)
+    ) {
+      const historical = await this.loadHistoricalFilings(
+        submissions.historicalFiles,
+        query.startDate,
+        query.endDate,
+      );
+      filings = mergeByAccession(filings, historical);
+    }
+```
+
+**Problem:** Historical loading is gated only on `startDate`. `GET .../filings?endDate=2018-12-31` filters recent-only data and often returns an empty page even when older filings exist.
+
+**Why it matters:** Breaks date-range filtering for a valid, common query shape.
+
+**Fix:** Load historical when the requested window can fall outside recent coverage (e.g. `endDate < oldestRecent`, empty recent, or missing `startDate` with an old `endDate`). Use a synthetic lower bound (`0000-01-01`) when calling `selectOverlappingHistoricalFiles` if `startDate` is absent. Document that the default unfiltered list is recent-only if that remains intentional.
+
+---
+
+#### 2. HIGH — List path materializes all overlapping history before paging
+
+**Where:** `filings.service.ts` (`loadHistoricalFilings` + `paginateFilings`)
+
+**Problem:** Wide `startDate` ranges `Promise.all` every overlapping historical JSON, merge/sort everything, then `slice` one page.
+
+**Why it matters:** High latency, memory use, and SEC request volume for deep history (outbound spacing helps rate, not payload size).
+
+**Fix:** Fetch newest-first until the page is filled; cap fan-out; and/or TTL-cache submissions/historical files.
+
+---
+
+#### 3. HIGH — Accession lookup can scan every historical file with no format check
+
+**Where:** `filings.service.ts` (`findByAccession`), `filings.controller.ts`
+
+**Problem:** Only `trim()` is applied. Misses/typos walk all historical files sequentially before `404`.
+
+**Why it matters:** Easy accidental or abusive amplification against SEC and your process.
+
+**Fix:** Validate accession shape early (`^\d{10}-\d{2}-\d{6}$` → `400`). Prefer files whose date range overlaps the accession year; cache file contents.
+
+---
+
+#### 4. MEDIUM — Merge prefers historical over recent on conflicts
+
+**Where:** `backend/src/filings/utils/filings-filter-sort.ts` (`mergeByAccession`)
+
+```25:34:backend/src/filings/utils/filings-filter-sort.ts
+export function mergeByAccession(
+  primary: readonly SecFilingRecord[],
+  secondary: readonly SecFilingRecord[],
+): SecFilingRecord[] {
+  const byAccession = new Map<string, SecFilingRecord>();
+  for (const filing of [...primary, ...secondary]) {
+    byAccession.set(filing.accessionNumber, filing);
+  }
+  return [...byAccession.values()];
+}
+```
+
+**Problem:** Later write wins, so historical overwrites recent. The unit test encodes this behavior.
+
+**Why it matters:** Boundary duplicates should keep recent (fresher/canonical).
+
+**Fix:** Iterate `[...secondary, ...primary]`, or `set` only if absent; update the test.
+
+---
+
+#### 5. MEDIUM — Recent-only default list is undocumented
+
+**Where:** `FilingsService.list` behavior vs `backend/README.md` / root README
+
+**Problem:** No dates → recent filings only; `total` looks like full history. Accession route is also missing from README endpoint table.
+
+**Why it matters:** Clients and reviewers can misread coverage and contract.
+
+**Fix:** Document inclusive filing-date semantics, historical load rules, defaults (`page=1`, `limit=20`, max `100`), and `GET .../filings/:accessionNumber`.
+
+---
+
+#### 6. MEDIUM — Company error UI still shows cached `CompanyHeader`
+
+**Where:** `frontend/src/pages/CompanyFilingsPage.tsx`
+
+```72:82:frontend/src/pages/CompanyFilingsPage.tsx
+            {companyQuery.isError ? (
+              <StatusMessage
+                status="error"
+                message={errorMessage(companyQuery.error)}
+                onRetry={() => void companyQuery.refetch()}
+              />
+            ) : null}
+
+            {companyQuery.data ? (
+              <CompanyHeader company={companyQuery.data} />
+            ) : null}
+```
+
+**Problem:** On refetch failure, TanStack Query keeps prior `data`, so error and header both render. Filings correctly require `!isError`.
+
+**Fix:** Render header when `companyQuery.data && !companyQuery.isError` (or `isSuccess`).
+
+---
+
+#### 7. MEDIUM — Queries ignore `AbortSignal`
+
+**Where:** `useCompany`, `useFilings` → services
+
+**Problem:** Rapid ticker/filter changes leave in-flight Axios work running.
+
+**Fix:** Pass `signal` from `queryFn` into `apiClient.get(..., { signal, params })`.
+
+---
+
+#### 8. MEDIUM — Accessibility gaps in filters, empty state, and document links
+
+**Where:** `FilingsFilters.tsx`, `StatusMessage.tsx` + `alert.tsx`, `FilingsTable.tsx`
+
+**Problems:**
+- Filter errors lack `aria-invalid` / `aria-describedby` (Input styles support it but unused).
+- Empty state uses `Alert` with `role="alert"` (assertive; wrong for “No results”).
+- “Open” links share the same accessible name; icon is `aria-hidden`.
+
+**Fix:** Wire ARIA on fields; use `role="status"` for empty; add descriptive `aria-label`s on document links.
+
+---
+
+#### 9. MEDIUM — Frontend trusts `primaryDocumentUrl` as `href` without allowlisting
+
+**Where:** `FilingsTable.tsx`
+
+**Problem:** Backend builds SEC archive URLs today, but the UI has no scheme/host check.
+
+**Fix:** Only link `https:` URLs under `www.sec.gov`; otherwise show plain text.
+
+---
+
+#### 10. MEDIUM — Supported tickers duplicated frontend vs backend
+
+**Where:** `frontend/.../company.types.ts` vs `backend/.../supported-companies.ts`
+
+**Problem:** Lists match now; drift causes 404s or missing options with no compile-time link.
+
+**Fix:** Backend `GET /api/companies` (or contract test), and drive the select from the API.
+
+---
+
+#### 11. MEDIUM — CORS hardcoded to Vite localhost
+
+**Where:** `backend/src/configure-app.ts`
+
+**Problem:** Any other origin/port fails browser calls.
+
+**Fix:** `CORS_ORIGINS` env (comma-separated), defaulting to `http://localhost:5173`.
+
+---
+
+#### 12. MEDIUM — No inbound throttling despite SEC fan-out
+
+**Where:** Controllers vs `SecClient.scheduleRequest`
+
+**Problem:** Outbound spacing is process-global; concurrent API clients can still multiply SEC traffic.
+
+**Fix:** Light throttle on filings routes + short TTL cache for submissions/historical files.
+
+---
+
+#### 13. MEDIUM — Frontend `.env` not gitignored
+
+**Where:** `frontend/.gitignore` (no `.env`; only `*.local`). Backend correctly ignores `.env`.
+
+**Problem:** Local env can be committed by accident. Current content is only `VITE_API_BASE_URL`, so risk is hygiene more than secrets.
+
+**Fix:** Add `.env` (keep `.env.example`).
+
+---
+
+#### 14. LOW — `reportDate` required in DTO but often empty string
+
+**Where:** mapper `reportDates[index] ?? ''`; `FilingDto.reportDate`
+
+**Fix:** Document as optional, or use `string | null` in DTO + OpenAPI. Frontend already shows `—`.
+
+---
+
+#### 15. LOW — `primaryDocument` path not sanitized beyond leading slashes
+
+**Where:** `sec-document-url.ts`
+
+**Problem:** Path segments like `../` could produce odd archive URLs if upstream data were hostile.
+
+**Fix:** Reject `/`, `\`, or `..` in document names.
+
+---
+
+#### 16. LOW — Redundant `toApiError` in hooks; thin frontend tests; no 404 route
+
+**Where:** hooks already covered by Axios interceptor; `App.test.tsx` smoke only; `routes/index.tsx`
+
+**Fix:** Map errors in one place; add filter/error/pagination tests; add `path: '*'`.
+
+---
+
+### Positive Observations
+
+- Clear Nest layering: `companies` / `filings` / `sec` / `common`, thin controllers, pure utils/mappers with solid unit tests.
+- SEC hygiene: required User-Agent email, trusted data base URL, timeout, outbound spacing, safe historical filenames, no stack traces in client errors.
+- ValidationPipe with `whitelist` + `forbidNonWhitelisted`; inclusive filing-date filter; newest-first sort with accession tie-break; `limit` capped at 100.
+- Frontend feature folders, shared Axios/`ApiError`, stable query keys, RHF+Zod filters (including start≤end), loading/error/empty/retry for filings, `encodeURIComponent(ticker)`, `rel="noreferrer"` on external links.
+- FE/BE shapes for company, paginated filings, and Nest error body match.
+
+---
+
+### Recommendations (priority)
+
+1. Fix historical loading for ranges that need it without `startDate` (especially `endDate`-only).
+2. Validate accession format before historical walks; bound/cache historical fetches for list + accession.
+3. Prefer recent on merge conflicts; document recent-only default and accession route.
+4. Gate `CompanyHeader` on success; pass `AbortSignal`; fix filter/empty/link a11y.
+5. Allowlist document URLs; sync supported tickers; make CORS configurable; ignore frontend `.env`.
+
+---
+
+### Overall Assessment
+
+| Area | Assessment |
+|------|------------|
+| Code quality | Strong — readable, typed, consistent |
+| Architecture | Strong for assignment scope; SEC isolation done well |
+| Security | Good outbound URL/config hygiene; inbound amplification, CORS, and href trust are the main gaps |
+| Performance | Fine for recent lists; historical materialization and accession scans are the risks |
+| Maintainability | High — small modules, shared errors, tested helpers |
+| Production readiness | Good local demo / interview submission; not deploy-ready without historical-contract clarity, caching/bounds, configurable CORS, and stronger UI a11y/tests |
+
+If you want fixes next, switch to Agent mode and say which severity tier to tackle first (HIGH only vs HIGH+MEDIUM).
+````
+
+## Session 7
+Timestamp: 2026-11-16T22:57:12+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Plan for fix the Recommendations (priority) list
+```
+AI response summary:
+
+```
+```
+
+## Session 7
+Timestamp: 2026-11-16T23:00:00+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+Implemented all five recommendation groups from the plan.
+
+### Backend
+- Historical filings load for `endDate`-only (and when the range is older than recent); no dates stay recent-only
+- Accession format validation + year-narrowed historical walk
+- In-memory SEC TTL cache (`SEC_CACHE_TTL_MS`, default 5m)
+- Merge prefers recent; unsafe `primaryDocument` path segments rejected
+- `GET /api/companies`, configurable `CORS_ORIGINS`, README/`.env.example` updates
+
+### Frontend
+- Company header gated on success; AbortSignal on queries; filter/empty/link a11y
+- SEC URL allowlist; ticker select from companies API; `.env` gitignored
+
+### Verification
+- Backend: `npm test` 57 passed; `npm run test:e2e` 6 passed; lint clean
+- Frontend: `npm test` 1 passed; lint clean
+- Decision recorded in `NOTES.md`
+```
+

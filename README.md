@@ -118,10 +118,13 @@ The frontend has an ESLint script only (no Prettier format script).
 | Frontend          | http://localhost:5173                            |
 | Backend           | http://localhost:3000                            |
 | Health check      | http://localhost:3000/health                     |
+| Companies list    | http://localhost:3000/api/companies              |
 | API (example)     | http://localhost:3000/api/companies/AAPL         |
 | Filings (example) | http://localhost:3000/api/companies/AAPL/filings |
 | Swagger UI        | http://localhost:3000/docs                       |
 | OpenAPI JSON      | http://localhost:3000/docs-json                  |
+
+Filings date filters are inclusive on **filing date**. With no dates, results are recent SEC submissions only; historical files load when the requested range can fall outside that window. See [`backend/README.md`](backend/README.md) for query defaults and accession lookup.
 
 ## API documentation
 

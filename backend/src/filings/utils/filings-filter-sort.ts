@@ -27,7 +27,8 @@ export function mergeByAccession(
   secondary: readonly SecFilingRecord[],
 ): SecFilingRecord[] {
   const byAccession = new Map<string, SecFilingRecord>();
-  for (const filing of [...primary, ...secondary]) {
+  // Secondary first, then primary so recent (primary) wins on conflicts.
+  for (const filing of [...secondary, ...primary]) {
     byAccession.set(filing.accessionNumber, filing);
   }
   return [...byAccession.values()];

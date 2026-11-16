@@ -10,6 +10,7 @@ const testSecConfig: SecConfig = {
   archivesBaseUrl: 'https://www.sec.gov/Archives/edgar/data',
   timeoutMs: 10_000,
   minRequestIntervalMs: 100,
+  cacheTtlMs: 300_000,
 };
 
 describe('SecClient', () => {
@@ -64,6 +65,32 @@ describe('SecClient', () => {
       new AppError('bad_request', 'Invalid SEC submissions file name.'),
     );
     expect(http.get).not.toHaveBeenCalled();
+  });
+
+  it('caches company submissions and skips a second HTTP call', async () => {
+    http.get.mockResolvedValue({
+      data: {
+        cik: '320193',
+        name: 'Apple Inc.',
+        tickers: ['AAPL'],
+        exchanges: ['Nasdaq'],
+        filings: {
+          recent: {
+            accessionNumber: ['0000320193-24-000123'],
+            filingDate: ['2024-11-01'],
+            reportDate: ['2024-09-28'],
+            form: ['10-K'],
+            primaryDocument: ['aapl-20240928.htm'],
+          },
+          files: [],
+        },
+      },
+    });
+
+    await client.getCompanySubmissions('320193');
+    await client.getCompanySubmissions('320193');
+
+    expect(http.get).toHaveBeenCalledTimes(1);
   });
 
   it('surfaces mapped upstream errors from axios failures', async () => {

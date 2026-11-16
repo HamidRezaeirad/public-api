@@ -1,10 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors/app.error';
 import { CompanyDto } from './dtos/company.dto';
-import { findSupportedCompany } from './supported-companies';
+import {
+  findSupportedCompany,
+  SUPPORTED_COMPANIES,
+} from './supported-companies';
 
 @Injectable()
 export class CompaniesService {
+  findAll(): CompanyDto[] {
+    return SUPPORTED_COMPANIES.map((company) => ({
+      ticker: company.ticker,
+      name: company.name,
+      cik: company.cik,
+    }));
+  }
+
   findByTicker(ticker: string): CompanyDto {
     const company = findSupportedCompany(ticker);
     if (!company) {

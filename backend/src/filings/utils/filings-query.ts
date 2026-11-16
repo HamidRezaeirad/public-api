@@ -8,3 +8,20 @@ export function assertDateRange(startDate?: string, endDate?: string): void {
     );
   }
 }
+
+/**
+ * Lower bound used when deciding whether to load historical SEC files.
+ * No dates → undefined (recent-only). endDate-only → open lower bound.
+ */
+export function effectiveHistoricalStart(
+  startDate?: string,
+  endDate?: string,
+): string | undefined {
+  if (startDate) {
+    return startDate;
+  }
+  if (endDate) {
+    return '0000-01-01';
+  }
+  return undefined;
+}

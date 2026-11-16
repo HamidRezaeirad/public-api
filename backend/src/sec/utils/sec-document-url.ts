@@ -18,7 +18,34 @@ export function buildPrimaryDocumentUrl(
     );
   }
 
-  return `${archivesBaseUrl}/${cikForPath}/${accessionPath}/${document}`;
+  const documentSegments = document.split('/');
+  const hasUnsafeDocumentSegment = documentSegments.some((segment) => {
+    if (!segment) {
+      return true;
+    }
+
+    try {
+      const decodedSegment = decodeURIComponent(segment);
+      return (
+        decodedSegment === '.' ||
+        decodedSegment === '..' ||
+        decodedSegment.includes('/') ||
+        decodedSegment.includes('\\')
+      );
+    } catch {
+      return true;
+    }
+  });
+
+  if (hasUnsafeDocumentSegment) {
+    throw new AppError(
+      'bad_response',
+      'SEC primary document name contains unsafe path segments.',
+    );
+  }
+
+  const encodedDocument = documentSegments.map(encodeURIComponent).join('/');
+  return `${archivesBaseUrl}/${cikForPath}/${accessionPath}/${encodedDocument}`;
 }
 
 /**

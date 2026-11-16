@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { isAllowedSecDocumentUrl } from '@/lib/secUrl'
 import type { Filing } from '../types/filing.types'
 
 type FilingsTableProps = {
@@ -45,16 +46,21 @@ export function FilingsTable({ filings }: FilingsTableProps) {
                 {filing.accessionNumber}
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="outline" size="sm" asChild>
-                  <a
-                    href={filing.primaryDocumentUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open
-                    <ExternalLink className="size-3.5" aria-hidden />
-                  </a>
-                </Button>
+                {isAllowedSecDocumentUrl(filing.primaryDocumentUrl) ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <a
+                      href={filing.primaryDocumentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Open ${filing.formType} filing ${filing.accessionNumber} on SEC.gov`}
+                    >
+                      Open
+                      <ExternalLink className="size-3.5" aria-hidden />
+                    </a>
+                  </Button>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Unavailable</span>
+                )}
               </TableCell>
             </TableRow>
           ))}

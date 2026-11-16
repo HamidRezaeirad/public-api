@@ -46,10 +46,16 @@ export function FilingsFilters({
             placeholder="e.g. 10-K"
             className="bg-card"
             disabled={disabled || isSubmitting}
+            aria-invalid={Boolean(errors.formType)}
+            aria-describedby={
+              errors.formType ? 'formType-error' : undefined
+            }
             {...register('formType')}
           />
           {errors.formType ? (
-            <p className="text-sm text-destructive">{errors.formType.message}</p>
+            <p id="formType-error" className="text-sm text-destructive">
+              {errors.formType.message}
+            </p>
           ) : null}
         </div>
 
@@ -62,10 +68,16 @@ export function FilingsFilters({
             type="date"
             className="bg-card"
             disabled={disabled || isSubmitting}
+            aria-invalid={Boolean(errors.startDate)}
+            aria-describedby={
+              errors.startDate ? 'startDate-error' : undefined
+            }
             {...register('startDate')}
           />
           {errors.startDate ? (
-            <p className="text-sm text-destructive">{errors.startDate.message}</p>
+            <p id="startDate-error" className="text-sm text-destructive">
+              {errors.startDate.message}
+            </p>
           ) : null}
         </div>
 
@@ -78,10 +90,14 @@ export function FilingsFilters({
             type="date"
             className="bg-card"
             disabled={disabled || isSubmitting}
+            aria-invalid={Boolean(errors.endDate)}
+            aria-describedby={errors.endDate ? 'endDate-error' : undefined}
             {...register('endDate')}
           />
           {errors.endDate ? (
-            <p className="text-sm text-destructive">{errors.endDate.message}</p>
+            <p id="endDate-error" className="text-sm text-destructive">
+              {errors.endDate.message}
+            </p>
           ) : null}
         </div>
 

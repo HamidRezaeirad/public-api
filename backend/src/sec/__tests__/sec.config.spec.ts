@@ -26,7 +26,19 @@ describe('loadSecConfig', () => {
       archivesBaseUrl: 'https://www.sec.gov/Archives/edgar/data',
       timeoutMs: 10_000,
       minRequestIntervalMs: 100,
+      cacheTtlMs: 300_000,
     });
+  });
+
+  it('loads SEC_CACHE_TTL_MS when provided', () => {
+    expect(
+      loadSecConfig(
+        createConfig({
+          ...validEnv,
+          SEC_CACHE_TTL_MS: '60000',
+        }),
+      ).cacheTtlMs,
+    ).toBe(60_000);
   });
 
   it('rejects a missing key', () => {

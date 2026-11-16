@@ -5,6 +5,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { CompanyFilingsPage } from '@/pages/CompanyFilingsPage'
 
 vi.mock('@/features/companies/services/companyService', () => ({
+  getCompanies: vi.fn(async () => [
+    {
+      ticker: 'AAPL',
+      name: 'Apple Inc.',
+      cik: '0000320193',
+    },
+  ]),
   getCompany: vi.fn(async () => ({
     ticker: 'AAPL',
     name: 'Apple Inc.',
