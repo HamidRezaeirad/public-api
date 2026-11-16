@@ -83,11 +83,11 @@ describe('filings-filter-sort', () => {
     });
   });
 
-  it('merges filings by accession number', () => {
+  it('merges filings by accession number preferring primary (recent)', () => {
     const merged = mergeByAccession(filings, [
       {
         ...filings[0],
-        primaryDocumentUrl: 'https://example.com/updated',
+        primaryDocumentUrl: 'https://example.com/historical',
       },
     ]);
 
@@ -95,7 +95,7 @@ describe('filings-filter-sort', () => {
     expect(
       merged.find((item) => item.accessionNumber === '0000320193-24-000123')
         ?.primaryDocumentUrl,
-    ).toBe('https://example.com/updated');
+    ).toBe('https://example.com/10k');
   });
 
   it('finds the oldest filing date', () => {

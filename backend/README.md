@@ -34,6 +34,8 @@ Edit `.env`. At minimum, set a real contact email in `SEC_USER_AGENT` before mak
 | `SEC_ARCHIVES_BASE_URL`       | Yes      | Base used to build primary document links. Must start with `https://www.sec.gov/Archives/edgar/data`.                           |
 | `SEC_TIMEOUT_MS`              | Yes      | Outbound SEC request timeout in milliseconds (example: `10000`).                                                                |
 | `SEC_MIN_REQUEST_INTERVAL_MS` | Yes      | Minimum spacing between SEC requests in milliseconds (example: `100`, about ≤ 10 req/s).                                        |
+| `SEC_CACHE_TTL_MS`            | No       | In-memory SEC response cache TTL in milliseconds. Defaults to `300000`. Set `0` to disable.                                     |
+| `CORS_ORIGINS`                | No       | Comma-separated browser origins. Defaults to `http://localhost:5173`.                                                           |
 | `PORT`                        | No       | HTTP port. Defaults to `3000` if unset.                                                                                         |
 
 Example (from `.env.example`—update the email):
@@ -44,6 +46,8 @@ SEC_DATA_BASE_URL=https://data.sec.gov
 SEC_ARCHIVES_BASE_URL=https://www.sec.gov/Archives/edgar/data
 SEC_TIMEOUT_MS=10000
 SEC_MIN_REQUEST_INTERVAL_MS=100
+SEC_CACHE_TTL_MS=300000
+CORS_ORIGINS=http://localhost:5173
 ```
 
 ## Running locally
@@ -88,16 +92,20 @@ npm run format
 
 ## Local URLs
 
-| Endpoint | URL                                                 |
-| -------- | --------------------------------------------------- |
-| API base | http://localhost:3000                               |
-| Health   | http://localhost:3000/health                        |
-| Company  | http://localhost:3000/api/companies/:ticker         |
-| Filings  | http://localhost:3000/api/companies/:ticker/filings |
+| Endpoint | URL                                                                  |
+| -------- | -------------------------------------------------------------------- |
+| API base | http://localhost:3000                                                |
+| Health   | http://localhost:3000/health                                         |
+| Companies | http://localhost:3000/api/companies                                 |
+| Company  | http://localhost:3000/api/companies/:ticker                          |
+| Filings  | http://localhost:3000/api/companies/:ticker/filings                  |
+| Filing   | http://localhost:3000/api/companies/:ticker/filings/:accessionNumber |
 
-Filings query params (optional): `page`, `limit`, `formType`, `startDate`, `endDate` (`YYYY-MM-DD`).
+Filings query params (optional): `page` (default `1`), `limit` (default `20`, max `100`), `formType`, `startDate`, `endDate` (`YYYY-MM-DD`).
 
-CORS allows the Vite frontend at `http://localhost:5173`.
+Date filters use **inclusive filing dates**. With no dates, the list returns **recent SEC submissions only**. Historical submission files load when `startDate` and/or `endDate` can fall outside that recent window (including `endDate`-only). Accession numbers must match `##########-##-######`.
+
+CORS allows origins from `CORS_ORIGINS` (default `http://localhost:5173`).
 
 ## API documentation
 

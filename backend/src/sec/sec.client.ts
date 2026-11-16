@@ -21,10 +21,16 @@ import {
   normalizeCik,
 } from './utils/sec-identifiers';
 
+type CacheEntry = {
+  readonly expiresAt: number;
+  readonly value: unknown;
+};
+
 @Injectable()
 export class SecClient {
   private lastRequestAt = 0;
   private requestQueue: Promise<void> = Promise.resolve();
+  private readonly responseCache = new Map<string, CacheEntry>();
 
   constructor(
     @Inject(SEC_AXIOS) private readonly http: AxiosInstance,
@@ -33,9 +39,13 @@ export class SecClient {
 
   async getCompanySubmissions(cik: string): Promise<SecCompanySubmissions> {
     const paddedCik = normalizeCik(cik);
-    const data = await this.getJson<SecSubmissionsResponse>(
-      `/submissions/CIK${paddedCik}.json`,
-    );
+    const path = `/submissions/CIK${paddedCik}.json`;
+    const cached = this.getCached<SecCompanySubmissions>(path);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.getJson<SecSubmissionsResponse>(path);
 
     const company = mapCompany(data, paddedCik);
     const recent = data.filings?.recent;
@@ -53,11 +63,13 @@ export class SecClient {
     );
     const historicalFiles = mapHistoricalFiles(data.filings?.files ?? []);
 
-    return {
+    const mapped: SecCompanySubmissions = {
       company,
       recentFilings,
       historicalFiles,
     };
+    this.setCached(path, mapped);
+    return mapped;
   }
 
   async getSubmissionsFile(fileName: string): Promise<SecFilingRecord[]> {
@@ -65,11 +77,17 @@ export class SecClient {
       throw new AppError('bad_request', 'Invalid SEC submissions file name.');
     }
 
-    const data = await this.getJson<SecHistoricalFilingsResponse>(
-      `/submissions/${fileName}`,
-    );
+    const path = `/submissions/${fileName}`;
+    const cached = this.getCached<SecFilingRecord[]>(path);
+    if (cached) {
+      return cached;
+    }
 
-    return mapFilingArrays(this.config.archivesBaseUrl, data, '');
+    const data = await this.getJson<SecHistoricalFilingsResponse>(path);
+
+    const mapped = mapFilingArrays(this.config.archivesBaseUrl, data, '');
+    this.setCached(path, mapped);
+    return mapped;
   }
 
   buildPrimaryDocumentUrl(
@@ -110,5 +128,32 @@ export class SecClient {
 
     this.requestQueue = run.catch(() => undefined);
     return run;
+  }
+
+  private getCached<T>(path: string): T | undefined {
+    if (this.config.cacheTtlMs <= 0) {
+      return undefined;
+    }
+
+    const entry = this.responseCache.get(path);
+    if (!entry) {
+      return undefined;
+    }
+    if (Date.now() >= entry.expiresAt) {
+      this.responseCache.delete(path);
+      return undefined;
+    }
+    return entry.value as T;
+  }
+
+  private setCached(path: string, value: unknown): void {
+    if (this.config.cacheTtlMs <= 0) {
+      return;
+    }
+
+    this.responseCache.set(path, {
+      expiresAt: Date.now() + this.config.cacheTtlMs,
+      value,
+    });
   }
 }

@@ -58,5 +58,10 @@ Decision: Replace empty/root Nest/Vite template READMEs with beginner-friendly r
 Rejected: Keeping vendor template READMEs, and inventing a frontend format script that does not exist.
 Why: New developers need accurate monorepo setup steps; docs stay aligned with real npm scripts and `.env.example` values.
 
+## 2026-11-16T23:04+01:00
+Decision: Fix code-review priorities: historical load for endDate-only (recent-only when no dates), accession format check + year-narrowed walk, in-memory SEC TTL cache, merge prefer recent, GET /api/companies + FE select from API, CORS_ORIGINS, SEC href allowlist, AbortSignal/a11y/error gating.
+Rejected: Incremental “fetch until page full” historical paging, Nest throttler/Redis, keeping hard-coded SUPPORTED_TICKERS as sole FE source.
+Why: Closes real correctness/amplification gaps without overbuilding; cache + validation cut repeat/invalid SEC work; companies list keeps ticker lists in sync.
+
 
 

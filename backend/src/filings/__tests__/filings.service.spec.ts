@@ -94,6 +94,35 @@ describe('FilingsService', () => {
     ]);
   });
 
+  it('loads historical files for endDate-only when the end is older than recent', async () => {
+    const result = await service.list('AAPL', {
+      endDate: '2018-12-31',
+      formType: '10-K',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(secClient.getSubmissionsFile).toHaveBeenCalledWith(
+      'CIK0000320193-submissions-001.json',
+    );
+    expect(result.data.map((item) => item.accessionNumber)).toEqual([
+      '0000320193-15-000001',
+    ]);
+  });
+
+  it('does not load historical files when no dates are provided', async () => {
+    const result = await service.list('AAPL', {
+      page: 1,
+      limit: 20,
+    });
+
+    expect(secClient.getSubmissionsFile).not.toHaveBeenCalled();
+    expect(result.data.map((item) => item.accessionNumber)).toEqual([
+      '0000320193-24-000123',
+      '0000320193-23-000010',
+    ]);
+  });
+
   it('rejects reversed date ranges', async () => {
     await expect(
       service.list('AAPL', {
@@ -134,5 +163,15 @@ describe('FilingsService', () => {
         'Filing "0000320193-99-999999" was not found for AAPL.',
       ),
     );
+  });
+
+  it('rejects invalid accession numbers before calling SEC', async () => {
+    await expect(service.findByAccession('AAPL', 'not-valid')).rejects.toEqual(
+      new AppError(
+        'bad_request',
+        'accessionNumber must match ##########-##-######.',
+      ),
+    );
+    expect(secClient.getCompanySubmissions).not.toHaveBeenCalled();
   });
 });

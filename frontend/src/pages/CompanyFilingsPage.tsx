@@ -12,11 +12,9 @@ import {
 } from '@/components/ui/card'
 import { CompanyHeader } from '@/features/companies/components/CompanyHeader'
 import { CompanySelect } from '@/features/companies/components/CompanySelect'
+import { useCompanies } from '@/features/companies/hooks/useCompanies'
 import { useCompany } from '@/features/companies/hooks/useCompany'
-import {
-  DEFAULT_TICKER,
-  type SupportedTicker,
-} from '@/features/companies/types/company.types'
+import { DEFAULT_TICKER } from '@/features/companies/types/company.types'
 import { FilingsFilters } from '@/features/filings/components/FilingsFilters'
 import { FilingsPagination } from '@/features/filings/components/FilingsPagination'
 import { FilingsTable } from '@/features/filings/components/FilingsTable'
@@ -34,14 +32,31 @@ function errorMessage(error: unknown): string {
   return 'Request failed'
 }
 
-export function CompanyFilingsPage() {
-  const [ticker, setTicker] = useState<SupportedTicker>(DEFAULT_TICKER)
-  const companyQuery = useCompany(ticker)
-  const filings = useFilings(ticker)
+function resolveTicker(
+  selected: string,
+  companies: { ticker: string }[],
+): string {
+  if (
+    companies.length === 0 ||
+    companies.some((company) => company.ticker === selected)
+  ) {
+    return selected
+  }
+  return companies[0]?.ticker ?? selected
+}
 
-  const handleTickerChange = (next: SupportedTicker) => {
+export function CompanyFilingsPage() {
+  const [ticker, setTicker] = useState(DEFAULT_TICKER)
+  const companiesQuery = useCompanies()
+  const companies = companiesQuery.data ?? []
+  const activeTicker = resolveTicker(ticker, companies)
+  const companyQuery = useCompany(activeTicker)
+  const filings = useFilings(activeTicker)
+  const { resetForTicker } = filings
+
+  const handleTickerChange = (next: string) => {
     setTicker(next)
-    filings.resetForTicker()
+    resetForTicker()
   }
 
   const filingsTotal = filings.data?.total
@@ -50,7 +65,21 @@ export function CompanyFilingsPage() {
     <MainLayout>
       <div className="space-y-6">
         <section className="flex flex-col gap-3 rounded-xl border border-border/80 bg-card/80 p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
-          <CompanySelect value={ticker} onChange={handleTickerChange} />
+          <div className="w-full space-y-2 sm:max-w-xs">
+            <CompanySelect
+              value={activeTicker}
+              companies={companies}
+              onChange={handleTickerChange}
+              disabled={companiesQuery.isLoading || companiesQuery.isError}
+            />
+            {companiesQuery.isError ? (
+              <StatusMessage
+                status="error"
+                message={errorMessage(companiesQuery.error)}
+                onRetry={() => void companiesQuery.refetch()}
+              />
+            ) : null}
+          </div>
           <Badge variant="secondary" className="w-fit gap-1.5 self-start sm:self-auto">
             <Server className="size-3" aria-hidden />
             Nest API
@@ -77,7 +106,7 @@ export function CompanyFilingsPage() {
               />
             ) : null}
 
-            {companyQuery.data ? (
+            {companyQuery.data && !companyQuery.isError ? (
               <CompanyHeader company={companyQuery.data} />
             ) : null}
           </CardContent>

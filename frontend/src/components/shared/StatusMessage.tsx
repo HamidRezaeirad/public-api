@@ -42,12 +42,15 @@ export function StatusMessage({ status, message, onRetry }: StatusMessageProps) 
   }
 
   return (
-    <Alert className="border-dashed bg-muted/40">
-      <Inbox />
-      <AlertTitle>No results</AlertTitle>
-      <AlertDescription>
+    <div
+      role="status"
+      className="relative grid w-full grid-cols-[calc(var(--spacing)*4)_1fr] items-start gap-x-3 gap-y-0.5 rounded-lg border border-dashed bg-muted/40 px-4 py-3 text-sm"
+    >
+      <Inbox className="size-4 translate-y-0.5 text-current" aria-hidden />
+      <div className="col-start-2 font-medium tracking-tight">No results</div>
+      <div className="col-start-2 text-sm text-muted-foreground">
         {message ?? 'Nothing to show for the current selection.'}
-      </AlertDescription>
-    </Alert>
+      </div>
+    </div>
   )
 }

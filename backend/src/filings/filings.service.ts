@@ -17,7 +17,14 @@ import {
   paginateFilings,
   sortFilings,
 } from './utils/filings-filter-sort';
-import { assertDateRange } from './utils/filings-query';
+import {
+  assertAccessionNumber,
+  selectHistoricalFilesForAccession,
+} from './utils/accession-number';
+import {
+  assertDateRange,
+  effectiveHistoricalStart,
+} from './utils/filings-query';
 import { selectOverlappingHistoricalFiles } from './utils/historical-files';
 
 @Injectable()
@@ -38,14 +45,18 @@ export class FilingsService {
 
     let filings = [...submissions.recentFilings];
     const oldestRecent = oldestFilingDate(filings);
+    const historicalStart = effectiveHistoricalStart(
+      query.startDate,
+      query.endDate,
+    );
 
     if (
-      query.startDate &&
-      (oldestRecent === undefined || query.startDate < oldestRecent)
+      historicalStart !== undefined &&
+      (oldestRecent === undefined || historicalStart < oldestRecent)
     ) {
       const historical = await this.loadHistoricalFilings(
         submissions.historicalFiles,
-        query.startDate,
+        historicalStart,
         query.endDate,
       );
       filings = mergeByAccession(filings, historical);
@@ -67,8 +78,8 @@ export class FilingsService {
     ticker: string,
     accessionNumber: string,
   ): Promise<FilingDto> {
+    const normalizedAccession = assertAccessionNumber(accessionNumber);
     const company = this.companiesService.findByTicker(ticker);
-    const normalizedAccession = accessionNumber.trim();
     const submissions = await this.secClient.getCompanySubmissions(company.cik);
 
     const fromRecent = submissions.recentFilings.find(
@@ -78,7 +89,12 @@ export class FilingsService {
       return toFilingDto(fromRecent);
     }
 
-    for (const file of submissions.historicalFiles) {
+    const historicalFiles = selectHistoricalFilesForAccession(
+      submissions.historicalFiles,
+      normalizedAccession,
+    );
+
+    for (const file of historicalFiles) {
       const historical = await this.secClient.getSubmissionsFile(file.name);
       const match = historical.find(
         (filing) => filing.accessionNumber === normalizedAccession,

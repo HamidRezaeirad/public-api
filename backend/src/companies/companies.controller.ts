@@ -8,6 +8,13 @@ import { CompanyDto } from './dtos/company.dto';
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'List supported companies' })
+  @ApiOkResponse({ type: CompanyDto, isArray: true })
+  findAll(): CompanyDto[] {
+    return this.companiesService.findAll();
+  }
+
   @Get(':ticker')
   @ApiOperation({ summary: 'Look up a supported company by ticker' })
   @ApiOkResponse({ type: CompanyDto })
