@@ -25,6 +25,14 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## API
+
+Controller routes use the global prefix `/api`. With the server on port 3000:
+
+- `GET http://localhost:3000/api`
+- Swagger UI: `http://localhost:3000/docs`
+- OpenAPI JSON: `http://localhost:3000/docs-json`
+
 ## Project setup
 
 ```bash
