@@ -63,5 +63,10 @@ Decision: Fix code-review priorities: historical load for endDate-only (recent-o
 Rejected: Incremental “fetch until page full” historical paging, Nest throttler/Redis, keeping hard-coded SUPPORTED_TICKERS as sole FE source.
 Why: Closes real correctness/amplification gaps without overbuilding; cache + validation cut repeat/invalid SEC work; companies list keeps ticker lists in sync.
 
+## 2026-11-22T09:05+01:00
+Decision: Simplify filings structure for clarity: two utils modules (`filings-query` validate/fetch policy, `filings-collection` shape list), linear `FilingsService` with private `collectFilings`, clearer AppError ownership + filter status map, FE `getErrorMessage`.
+Rejected: Nest-only HttpException rewrite, and one giant service file with no pure helpers.
+Why: Interview feedback asked for simpler error handling and responsibility splits; keep SOLID/DRY seams without scattering one-purpose files.
+
 
 

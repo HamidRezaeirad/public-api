@@ -1,3 +1,7 @@
+/**
+ * Domain/transport error. Throw from services, SecClient, or SEC mappers.
+ * Only AppExceptionFilter maps AppError → HTTP JSON.
+ */
 export type AppErrorCode =
   | 'not_found'
   | 'bad_request'

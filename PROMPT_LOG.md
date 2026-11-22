@@ -2162,3 +2162,110 @@ Implemented all five recommendation groups from the plan.
 - Decision recorded in `NOTES.md`
 ```
 
+## Session 7
+Timestamp: 2026-11-22T08:17:12+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+/ask
+
+here is thefeadback is that true:
+To give you some feedback: we were looking for a bit more clarity and simplicity in the code’s structure, especially around error handling and how responsibilities are split between functions. Keeping those areas simple and easy to follow is something we put a lot of weight on.
+```
+AI response summary:
+
+```
+Yes — that feedback is fair, and it matches how this codebase reads on a quick review.
+
+It is not saying the app is broken. It is saying the structure asks the reader to jump around more than they wanted, especially for an interview-sized Nest/React assignment.
+
+### Where that lands in your code
+
+**1. Error handling has several hops**
+
+Backend path is roughly:
+
+`throw AppError` (utils / mappers / services / SEC client)  
+→ `mapSecAxiosError` for upstream Axios  
+→ `AppExceptionFilter` maps codes to HTTP  
+→ frontend `toApiError` + Axios interceptor → `ApiError`
+
+That is coherent, but for this scope it can feel like more machinery than clarity. A reviewer scanning `list` / `findByAccession` has to know the custom error type, the code→status map, and the FE mirror before the full story clicks.
+
+**2. Responsibilities are split into many small pieces**
+
+Around filings alone you have helpers such as:
+
+- `assertDateRange` / `effectiveHistoricalStart`
+- `assertAccessionNumber` / `selectHistoricalFilesForAccession`
+- `selectOverlappingHistoricalFiles` / `fileOverlapsRange`
+- `mergeByAccession` / `oldestFilingDate` / `filterFilings` / `sortFilings` / `paginateFilings`
+
+Individually those are fine and easy to unit-test. Together they can read as over-factored for a take-home: the main flow lives in orchestration, and the “what happens” story is spread across files.
+
+**3. What they usually mean by “simplicity”**
+
+For this kind of interview, they often prefer:
+
+- fewer layers for the happy path
+- errors thrown close to the decision (often Nest `HttpException` / a thin service throw)
+- slightly larger, more linear functions instead of many tiny pure helpers
+- structure you can follow top-to-bottom in one or two files
+
+### Balanced take
+
+| Feedback angle | Accurate? |
+|---|---|
+| Code is unclear/wrong | No — modules and contracts are generally solid |
+| Error path is more complex than needed for the assignment | Yes |
+| Function split favors abstraction/testability over scanability | Yes |
+| They wanted simpler mental model over “correct enterprise shape” | Likely yes |
+
+So: **the feedback is true as a taste/priority judgment**, not as “you built the wrong product.” You optimized for separation of concerns and test seams; they weighted **clarity and simplicity of reading** higher.
+
+If you want, I can outline a concrete “simplify for interview eyes” refactor (still Ask mode: guidance only) focused on collapsing error handling and pulling the filings flow into fewer, more linear steps.
+```
+
+## Session 7
+Timestamp: 2026-11-22T08:22:56+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Yes fix this in solid and dry
+```
+AI response summary:
+
+```
+```
+
+## Session 7
+Timestamp: 2026-11-22T09:03:06+01:00
+Tool: Cursor
+Model: default
+Prompt:
+
+```
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+```
+AI response summary:
+
+```
+Simplified structure for clearer error ownership and filings responsibilities.
+
+### What changed
+- **Errors:** Documented `AppError` ownership; `AppExceptionFilter` uses a status→code map; SEC incomplete URL identifiers use `bad_response`; FE `getErrorMessage` shared from `lib/axios`
+- **Filings utils:** Collapsed to `filings-query.ts` (validate / what to fetch) + `filings-collection.ts` (filter / sort / merge / paginate); removed the old one-purpose files
+- **Service:** `FilingsService.list` is a short pipeline with private `collectFilings` for recent-vs-historical
+
+### Verification
+- Backend: 62 unit + 6 e2e passed; lint clean  
+- Frontend: tests + lint passed  
+- Decision recorded in `NOTES.md`
+```
+
