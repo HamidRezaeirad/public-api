@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../common/errors/app.error';
 import { CompaniesService } from '../companies/companies.service';
+import type { SecCompanySubmissions } from '../sec/dtos/sec-company.interface';
 import type {
   SecFilingRecord,
   SecSubmissionsFileRef,
@@ -16,16 +17,14 @@ import {
   oldestFilingDate,
   paginateFilings,
   sortFilings,
-} from './utils/filings-filter-sort';
+} from './utils/filings-collection';
 import {
   assertAccessionNumber,
-  selectHistoricalFilesForAccession,
-} from './utils/accession-number';
-import {
   assertDateRange,
   effectiveHistoricalStart,
+  selectHistoricalFilesForAccession,
+  selectOverlappingHistoricalFiles,
 } from './utils/filings-query';
-import { selectOverlappingHistoricalFiles } from './utils/historical-files';
 
 @Injectable()
 export class FilingsService {
@@ -42,28 +41,12 @@ export class FilingsService {
 
     const company = this.companiesService.findByTicker(ticker);
     const submissions = await this.secClient.getCompanySubmissions(company.cik);
-
-    let filings = [...submissions.recentFilings];
-    const oldestRecent = oldestFilingDate(filings);
-    const historicalStart = effectiveHistoricalStart(
-      query.startDate,
-      query.endDate,
+    const filings = await this.collectFilings(submissions, query);
+    const page = paginateFilings(
+      sortFilings(filterFilings(filings, query)),
+      query.page,
+      query.limit,
     );
-
-    if (
-      historicalStart !== undefined &&
-      (oldestRecent === undefined || historicalStart < oldestRecent)
-    ) {
-      const historical = await this.loadHistoricalFilings(
-        submissions.historicalFiles,
-        historicalStart,
-        query.endDate,
-      );
-      filings = mergeByAccession(filings, historical);
-    }
-
-    const sorted = sortFilings(filterFilings(filings, query));
-    const page = paginateFilings(sorted, query.page, query.limit);
 
     return {
       data: page.data.map((filing) => toFilingDto(filing)),
@@ -108,6 +91,36 @@ export class FilingsService {
       'not_found',
       `Filing "${normalizedAccession}" was not found for ${company.ticker}.`,
     );
+  }
+
+  /**
+   * Recent-only when no dates. Load historical when the query can fall
+   * outside the recent window (including endDate-only).
+   */
+  private async collectFilings(
+    submissions: SecCompanySubmissions,
+    query: ListFilingsQueryDto,
+  ): Promise<SecFilingRecord[]> {
+    const recent = [...submissions.recentFilings];
+    const historicalStart = effectiveHistoricalStart(
+      query.startDate,
+      query.endDate,
+    );
+    const oldestRecent = oldestFilingDate(recent);
+
+    if (
+      historicalStart === undefined ||
+      (oldestRecent !== undefined && historicalStart >= oldestRecent)
+    ) {
+      return recent;
+    }
+
+    const historical = await this.loadHistoricalFilings(
+      submissions.historicalFiles,
+      historicalStart,
+      query.endDate,
+    );
+    return mergeByAccession(recent, historical);
   }
 
   private async loadHistoricalFilings(

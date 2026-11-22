@@ -6,7 +6,7 @@ import {
   oldestFilingDate,
   paginateFilings,
   sortFilings,
-} from '../utils/filings-filter-sort';
+} from '../utils/filings-collection';
 
 const filings: SecFilingRecord[] = [
   {
@@ -35,7 +35,7 @@ const filings: SecFilingRecord[] = [
   },
 ];
 
-describe('filings-filter-sort', () => {
+describe('filings-collection', () => {
   it('filters inclusively by filing date and form type', () => {
     const filtered = filterFilings(filings, {
       formType: '10-K',

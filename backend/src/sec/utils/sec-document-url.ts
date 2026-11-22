@@ -13,7 +13,7 @@ export function buildPrimaryDocumentUrl(
 
   if (!cikForPath || !accessionPath || !document) {
     throw new AppError(
-      'bad_request',
+      'bad_response',
       'Cannot build SEC document URL from incomplete identifiers.',
     );
   }

@@ -19,18 +19,8 @@ import { FilingsFilters } from '@/features/filings/components/FilingsFilters'
 import { FilingsPagination } from '@/features/filings/components/FilingsPagination'
 import { FilingsTable } from '@/features/filings/components/FilingsTable'
 import { useFilings } from '@/features/filings/hooks/useFilings'
-import { ApiError } from '@/lib/axios'
+import { getErrorMessage } from '@/lib/axios'
 import { MainLayout } from '@/layouts/MainLayout'
-
-function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return 'Request failed'
-}
 
 function resolveTicker(
   selected: string,
@@ -75,7 +65,7 @@ export function CompanyFilingsPage() {
             {companiesQuery.isError ? (
               <StatusMessage
                 status="error"
-                message={errorMessage(companiesQuery.error)}
+                message={getErrorMessage(companiesQuery.error)}
                 onRetry={() => void companiesQuery.refetch()}
               />
             ) : null}
@@ -101,7 +91,7 @@ export function CompanyFilingsPage() {
             {companyQuery.isError ? (
               <StatusMessage
                 status="error"
-                message={errorMessage(companyQuery.error)}
+                message={getErrorMessage(companyQuery.error)}
                 onRetry={() => void companyQuery.refetch()}
               />
             ) : null}
@@ -136,7 +126,7 @@ export function CompanyFilingsPage() {
             {filings.isError ? (
               <StatusMessage
                 status="error"
-                message={errorMessage(filings.error)}
+                message={getErrorMessage(filings.error)}
                 onRetry={() => void filings.refetch()}
               />
             ) : null}

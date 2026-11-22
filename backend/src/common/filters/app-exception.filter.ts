@@ -19,6 +19,16 @@ const APP_ERROR_STATUS: Record<AppErrorCode, number> = {
   bad_response: HttpStatus.BAD_GATEWAY,
 };
 
+const HTTP_STATUS_CODE: Record<number, string> = {
+  [HttpStatus.BAD_REQUEST]: 'bad_request',
+  [HttpStatus.NOT_FOUND]: 'not_found',
+  [HttpStatus.FORBIDDEN]: 'forbidden',
+  [HttpStatus.TOO_MANY_REQUESTS]: 'rate_limited',
+  [HttpStatus.GATEWAY_TIMEOUT]: 'timeout',
+  [HttpStatus.BAD_GATEWAY]: 'unavailable',
+  [HttpStatus.SERVICE_UNAVAILABLE]: 'unavailable',
+};
+
 export type ErrorResponseBody = {
   statusCode: number;
   code: string;
@@ -94,24 +104,9 @@ export class AppExceptionFilter implements ExceptionFilter {
   }
 
   private codeFromStatus(statusCode: number): string {
-    if (statusCode === 400) {
-      return 'bad_request';
-    }
-    if (statusCode === 404) {
-      return 'not_found';
-    }
-    if (statusCode === 403) {
-      return 'forbidden';
-    }
-    if (statusCode === 429) {
-      return 'rate_limited';
-    }
-    if (statusCode === 504) {
-      return 'timeout';
-    }
-    if (statusCode === 502 || statusCode === 503) {
-      return 'unavailable';
-    }
-    return statusCode >= 500 ? 'unavailable' : 'bad_request';
+    return (
+      HTTP_STATUS_CODE[statusCode] ??
+      (statusCode >= 500 ? 'unavailable' : 'bad_request')
+    );
   }
 }

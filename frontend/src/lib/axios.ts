@@ -64,6 +64,13 @@ export function toApiError(error: unknown): ApiError {
   })
 }
 
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError || error instanceof Error) {
+    return error.message
+  }
+  return 'Request failed'
+}
+
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
